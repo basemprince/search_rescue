@@ -4,7 +4,9 @@
 
 The objective: search an unknown environment for a specific target using cooperative robots
 
-![illustration](images/illustration.png)
+
+[<img src="images/illustration.png" width="450"/>](images/illustration.png)
+
 Project details so far:
 * We are planning on using ROS with python and Gazebo
 * Deploy three holonomic robots with lidar sensors and wheel encoders
@@ -22,8 +24,8 @@ please follow instructions in the install.md file
 
 ## Running
 
-'''
+```
 cd ~/search_rescue
 source setup.bash
 roslaunch platform_start.launch
-'''
+```
