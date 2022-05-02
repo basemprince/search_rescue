@@ -5,7 +5,7 @@ $ sudo apt-get install ros-melodic-dynamixel-sdk
 $ sudo apt-get install ros-melodic-turtlebot3-msgs
 $ sudo apt-get install ros-melodic-turtlebot3
 
-instal ROS-melodic-SLAM
+instal ROS-melodic-SLAM:
 
 $ sudo apt-get install ros-melodic-joy 
 $ sudo apt-get install ros-melodic-teleop-twist-joy
@@ -29,11 +29,13 @@ $ sudo apt-get install ros-melodic-gmapping
 $ sudo apt-get install ros-melodic-navigation
 
 
-Catkin_make
+Catkin_make:
 $ cd ~/search_rescue && catkin_make
 
+For testing:
 
-$ export TURTLEBOT3_MODEL=burger
+$ source setup.bash
+
 $ roslaunch turtlebot3_gazebo turtlebot3_empty_world.launch
 
 If the following error occurs after roslaunch do the following:

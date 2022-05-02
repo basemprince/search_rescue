@@ -1,0 +1,32 @@
+<launch>
+    <include file="$(find turtlebot3_gazebo)/launch/multi_turtlebot3.launch" />
+
+    <group ns="tb3_0">
+    <include file="$(find turtlebot3_slam)/launch/turtlebot3_gmapping.launch">
+    <arg name="set_base_frame" value="tb3_0/base_footprint" />
+    <arg name="set_odom_frame" value="tb3_0/odom" />
+    <arg name="set_map_frame" value="tb3_0/map" />
+    </include>
+    </group>
+
+    <group ns="tb3_1">
+    <include file="$(find turtlebot3_slam)/launch/turtlebot3_gmapping.launch">
+    <arg name="set_base_frame" value="tb3_1/base_footprint" />
+    <arg name="set_odom_frame" value="tb3_1/odom" />
+    <arg name="set_map_frame" value="tb3_1/map" />
+    </include>
+    </group>
+
+    <group ns="tb3_2">
+    <include file="$(find turtlebot3_slam)/launch/turtlebot3_gmapping.launch">
+    <arg name="set_base_frame" value="tb3_2/base_footprint" />
+    <arg name="set_odom_frame" value="tb3_2/odom" />
+    <arg name="set_map_frame" value="tb3_2/map" />
+    </include>
+    </group>
+
+    <include file="$(find turtlebot3_gazebo)/launch/multi_map_merge.launch" />
+
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find turtlebot3_gazebo)/rviz/multi_turtlebot3_slam.rviz"/>
+
+</launch>

@@ -1,4 +1,5 @@
-call 3 turtlebot3s in
+call 3 turtlebot3s
+
 roslaunch turtlebot3_gazebo multi_turtlebot3.launch
 
 excute slam
