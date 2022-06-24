@@ -27,7 +27,7 @@ $ sudo apt-get install ros-melodic-compressed-image-transport
 $ sudo apt-get install ros-melodic-rqt-image-view
 $ sudo apt-get install ros-melodic-gmapping
 $ sudo apt-get install ros-melodic-navigation
-
+$ sudo apt-get install ros-melodic-multirobot-map-merge
 
 Catkin_make:
 $ cd ~/search_rescue && catkin_make
