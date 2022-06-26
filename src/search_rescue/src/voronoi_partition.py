@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import OccupancyGrid, MapMetaData, Odometry
 import numpy as np
 
@@ -17,17 +17,17 @@ class voronoi_partition:
         self.tb1 = None
         self.tb2 = None
         self.og_np = None
-        self.way_pt0 = Point()
-        self.way_pt1 = Point()
-        self.way_pt2 = Point()
+        self.way_pt0 = PoseStamped()
+        self.way_pt1 = PoseStamped()
+        self.way_pt2 = PoseStamped()
         rospy.init_node('voronoi_node', anonymous=False)
         rospy.Subscriber('tb3_0/odom', Odometry , self.tb0_callback)
         rospy.Subscriber('tb3_1/odom', Odometry , self.tb1_callback)
         rospy.Subscriber('tb3_2/odom', Odometry , self.tb2_callback)
         rospy.Subscriber('map', OccupancyGrid , self.og_callback)
-        self.pub0= rospy.Publisher('/way_point/tb3_0',Point, queue_size=10)
-        self.pub1= rospy.Publisher('/way_point/tb3_1',Point, queue_size=10)
-        self.pub2= rospy.Publisher('/way_point/tb3_2',Point, queue_size=10)
+        self.pub0= rospy.Publisher("tb3_0/move_base_simple/goal", PoseStamped, queue_size=5)
+        self.pub1= rospy.Publisher('/way_point/tb3_1',PoseStamped, queue_size=10)
+        self.pub2= rospy.Publisher('/way_point/tb3_2',PoseStamped, queue_size=10)
         try:
           rospy.spin()
         except KeyboardInterrupt:
@@ -157,26 +157,55 @@ class voronoi_partition:
 
 
             # for publishing to robot 0:
-            self.way_pt0.x = new_robots_pos[0,0]
-            self.way_pt0.y = new_robots_pos[0,1]
-            self.way_pt0.z = 0
+            self.way_pt0.pose.position.x = new_robots_pos[0,0]
+            self.way_pt0.pose.position.y = new_robots_pos[0,1]
+            self.way_pt0.pose.position.z = 0
+            self.way_pt0.pose.orientation.x = 0.0
+            self.way_pt0.pose.orientation.y = 0.0
+            self.way_pt0.pose.orientation.z = 0.0
+            self.way_pt0.pose.orientation.w = 1.0
 
             # for publishing to robot 1:
-            self.way_pt1.x = new_robots_pos[1,0]
-            self.way_pt1.y = new_robots_pos[1,1]
-            self.way_pt1.z = 0
+            self.way_pt1.pose.position.x = new_robots_pos[1,0]
+            self.way_pt1.pose.position.y = new_robots_pos[1,1]
+            self.way_pt1.pose.position.z = 0
+            self.way_pt1.pose.orientation.x = 0.0
+            self.way_pt1.pose.orientation.y = 0.0
+            self.way_pt1.pose.orientation.z = 0.0
+            self.way_pt1.pose.orientation.w = 1.0
 
             # for publishing to robot 2:
-            self.way_pt2.x = new_robots_pos[2,0]
-            self.way_pt2.y = new_robots_pos[2,1]
-            self.way_pt2.z = 0
+            self.way_pt2.pose.position.x = new_robots_pos[2,0]
+            self.way_pt2.pose.position.y = new_robots_pos[2,1]
+            self.way_pt2.pose.position.z = 0
+            self.way_pt2.pose.orientation.x = 0.0
+            self.way_pt2.pose.orientation.y = 0.0
+            self.way_pt2.pose.orientation.z = 0.0
+            self.way_pt2.pose.orientation.w = 1.0
 
             self.publish_pts()
 
     def publish_pts(self):
+
+        self.way_pt0.header.seq = 1
+        self.way_pt0.header.stamp = rospy.Time.now()
+        self.way_pt0.header.frame_id = "map"
+
+        self.way_pt1.header.seq = 1
+        self.way_pt1.header.stamp = rospy.Time.now()
+        self.way_pt1.header.frame_id = "map"
+
+        self.way_pt2.header.seq = 1
+        self.way_pt2.header.stamp = rospy.Time.now()
+        self.way_pt2.header.frame_id = "map"
+
+
         self.pub0.publish(self.way_pt0)
+        rospy.sleep(0.5)
         self.pub1.publish(self.way_pt1)
+        rospy.sleep(0.5)
         self.pub2.publish(self.way_pt2)
+        rospy.sleep(0.5)
 
 if __name__ == '__main__':
   voronoi_partition()

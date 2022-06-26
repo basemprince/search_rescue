@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>multibot_layers</name>
+  <version>1.0.0</version>
+  <description>The multibot_layers package</description>
+
+  <maintainer email="b10307115@gapps.ntust.edu.tw">airuchen</maintainer>
+
+
+  <license>Apache 2.0</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>costmap_2d</build_depend>
+  <build_depend>dynamic_reconfigure</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_export_depend>costmap_2d</build_export_depend>
+  <build_export_depend>dynamic_reconfigure</build_export_depend>
+  <build_export_depend>roscpp</build_export_depend>
+  <exec_depend>costmap_2d</exec_depend>
+  <exec_depend>dynamic_reconfigure</exec_depend>
+  <exec_depend>roscpp</exec_depend>
+
+
+  <export>
+    <costmap_2d plugin="${prefix}/costmap_plugins.xml" />
+  </export>
+</package>
