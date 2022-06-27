@@ -25,9 +25,9 @@ class voronoi_partition:
         rospy.Subscriber('tb3_1/odom', Odometry , self.tb1_callback)
         rospy.Subscriber('tb3_2/odom', Odometry , self.tb2_callback)
         rospy.Subscriber('map', OccupancyGrid , self.og_callback)
-        self.pub0= rospy.Publisher("tb3_0/move_base_simple/goal", PoseStamped, queue_size=5)
-        self.pub1= rospy.Publisher('/way_point/tb3_1',PoseStamped, queue_size=10)
-        self.pub2= rospy.Publisher('/way_point/tb3_2',PoseStamped, queue_size=10)
+        self.pub0= rospy.Publisher("tb3_0/move_base_simple/goal",PoseStamped, queue_size=5)
+        self.pub1= rospy.Publisher("tb3_1/move_base_simple/goal",PoseStamped, queue_size=5)
+        self.pub2= rospy.Publisher("tb3_2/move_base_simple/goal",PoseStamped, queue_size=5)
         try:
           rospy.spin()
         except KeyboardInterrupt:
@@ -44,20 +44,21 @@ class voronoi_partition:
     # call back function for robot1 position
     def tb0_callback(self, data):
         # rospy.loginfo("recieved data - tb0")
+        # print(data.pose.pose.position)
         self.tb0 = data
-        self.voronoi_compute()
+        # self.voronoi_compute()
     
     # call back function for robot2 position
     def tb1_callback(self, data):
         # rospy.loginfo("recieved data - tb1")
         self.tb1 = data
-        self.voronoi_compute()
+        # self.voronoi_compute()
         
     # call back function for robot2 position
     def tb2_callback(self, data):
         # rospy.loginfo("recieved data - tb2")
         self.tb2 = data
-        self.voronoi_compute()
+        # self.voronoi_compute()
     
     # convert ocupancy grid to real world map coords
     # input: the column and row number in the occupancy grid
@@ -139,8 +140,6 @@ class voronoi_partition:
 
         ##### insert voronoi code here #######
         if self.info_available():
-            print('hello!!!')
-
             # free points in map
             free_points = self.og_to_world()
             
@@ -152,7 +151,6 @@ class voronoi_partition:
 
             new_robots_pos = self.voronoi(robots_pos, free_points)
 
-            # print('current:\n', robots_pos)
             # print('new:\n', new_robots_pos)
 
 

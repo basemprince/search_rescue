@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <launch>
   <!-- Arguments -->
-  <arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="model type [burger, waffle, waffle_pi]"/>
-  <arg name="map_file" default="$(find turtlebot3_navigation)/maps/map.yaml"/>
+  <arg name="model" default="burger"/>
+  <arg name="map_file" default="$(find turtlebot3_navigation)/maps/house.yaml"/>
   <arg name="open_rviz" default="false"/>
   <arg name="move_forward_only" default="false"/>
   <arg name="first_tb3" default="tb3_0" />
@@ -13,18 +13,6 @@
   <arg name="first_tb3_y_pos" default="-1.0"/>
   <arg name="first_tb3_z_pos" default=" 0.0"/>
   <arg name="first_tb3_yaw"   default=" 1.57"/>
-
-  <arg name="second_tb3_x_pos" default=" -7.0"/>
-  <arg name="second_tb3_y_pos" default="-2.0"/>
-  <arg name="second_tb3_z_pos" default=" 0.0"/>
-  <arg name="second_tb3_yaw"   default=" 1.57"/>
-
-  <arg name="third_tb3_x_pos" default=" -6.5"/>
-  <arg name="third_tb3_y_pos" default=" -1.0"/>
-  <arg name="third_tb3_z_pos" default=" 0.0"/>
-  <arg name="third_tb3_yaw"   default=" 0.0"/>
-
-
 
   
   <group ns = "$(arg first_tb3)">

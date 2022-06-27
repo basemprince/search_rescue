@@ -1,5 +1,5 @@
 <launch>
-  <arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="model type [burger, waffle, waffle_pi]"/>
+ <arg name="model" default="burger"/>
   <arg name="first_tb3"  default="tb3_0"/>
   <arg name="second_tb3" default="tb3_1"/>
   <arg name="third_tb3"  default="tb3_2"/>
