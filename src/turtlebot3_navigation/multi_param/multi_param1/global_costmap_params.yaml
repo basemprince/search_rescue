@@ -7,20 +7,18 @@ global_costmap:
   transform_tolerance: 0.5
 
   
-
   width: 50
   height: 50
   resolution: 0.075
 
   rolling_window: false
-  track_unknown_space: true
- 
+  track_unknown_space: false
+
   footprint: [[-0.205, -0.155], [-0.205, 0.155], [0.077, 0.155], [0.077, -0.155]]
-  #robot_radius: 0.17
   
   plugins:
     - {name: static,           type: "costmap_2d::StaticLayer"}
-    - {name: multibot_layer,     type: "multibot_layer_namespace::MultibotLayer"}
+    - {name: multibot_layer,   type: "multibot_layer_namespace::MultibotLayer"}
     - {name: sensor,           type: "costmap_2d::ObstacleLayer"}
     - {name: inflation,        type: "costmap_2d::InflationLayer"}
 

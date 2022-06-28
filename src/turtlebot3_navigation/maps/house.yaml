@@ -1,6 +1,7 @@
 image: house.pgm
 resolution: 0.050000
-origin: [-7.391218, -5.321463, 0.000000]
+# origin: [-7.391218, -5.321463, 0.000000]
+origin: [-9.95000014827, -9.70000014454, 0.000000]
 negate: 0
 occupied_thresh: 0.85
 free_thresh: 0.2

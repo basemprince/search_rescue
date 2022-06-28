@@ -158,28 +158,28 @@ class voronoi_partition:
             self.way_pt0.pose.position.x = new_robots_pos[0,0]
             self.way_pt0.pose.position.y = new_robots_pos[0,1]
             self.way_pt0.pose.position.z = 0
-            self.way_pt0.pose.orientation.x = 0.0
-            self.way_pt0.pose.orientation.y = 0.0
-            self.way_pt0.pose.orientation.z = 0.0
-            self.way_pt0.pose.orientation.w = 1.0
+            self.way_pt0.pose.orientation.x = self.tb0.pose.pose.orientation.x
+            self.way_pt0.pose.orientation.y = self.tb0.pose.pose.orientation.y
+            self.way_pt0.pose.orientation.z = self.tb0.pose.pose.orientation.z
+            self.way_pt0.pose.orientation.w = self.tb0.pose.pose.orientation.w
 
             # for publishing to robot 1:
             self.way_pt1.pose.position.x = new_robots_pos[1,0]
             self.way_pt1.pose.position.y = new_robots_pos[1,1]
             self.way_pt1.pose.position.z = 0
-            self.way_pt1.pose.orientation.x = 0.0
-            self.way_pt1.pose.orientation.y = 0.0
-            self.way_pt1.pose.orientation.z = 0.0
-            self.way_pt1.pose.orientation.w = 1.0
+            self.way_pt1.pose.orientation.x = self.tb1.pose.pose.orientation.x
+            self.way_pt1.pose.orientation.y = self.tb1.pose.pose.orientation.y
+            self.way_pt1.pose.orientation.z = self.tb1.pose.pose.orientation.z
+            self.way_pt1.pose.orientation.w = self.tb1.pose.pose.orientation.w
 
             # for publishing to robot 2:
             self.way_pt2.pose.position.x = new_robots_pos[2,0]
             self.way_pt2.pose.position.y = new_robots_pos[2,1]
             self.way_pt2.pose.position.z = 0
-            self.way_pt2.pose.orientation.x = 0.0
-            self.way_pt2.pose.orientation.y = 0.0
-            self.way_pt2.pose.orientation.z = 0.0
-            self.way_pt2.pose.orientation.w = 1.0
+            self.way_pt2.pose.orientation.x = self.tb2.pose.pose.orientation.x
+            self.way_pt2.pose.orientation.y = self.tb2.pose.pose.orientation.y
+            self.way_pt2.pose.orientation.z = self.tb2.pose.pose.orientation.z
+            self.way_pt2.pose.orientation.w = self.tb2.pose.pose.orientation.w
 
             self.publish_pts()
 
