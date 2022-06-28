@@ -17,6 +17,7 @@ class voronoi_partition:
         self.tb1 = None
         self.tb2 = None
         self.og_np = None
+        self.count = 0
         self.way_pt0 = PoseStamped()
         self.way_pt1 = PoseStamped()
         self.way_pt2 = PoseStamped()
@@ -39,7 +40,9 @@ class voronoi_partition:
         # the occupancy grid in a numpy array ->>>
         self.map = data
         self.og_to_numpy()
-        self.voronoi_compute()
+        if self.count % 5 == 0:
+            self.voronoi_compute()
+        self.count += 1
         
     # call back function for robot1 position
     def tb0_callback(self, data):
@@ -63,8 +66,8 @@ class voronoi_partition:
     # convert ocupancy grid to real world map coords
     # input: the column and row number in the occupancy grid
     # output: the x and y location on real map
-    def og_to_world(self):
-        rows, columns = np.where(self.og_np==0)
+    def og_to_world(self, value=0):
+        rows, columns = np.where(self.og_np==value)
         xs = self.map.info.origin.position.x + self.map.info.resolution * columns
         ys = self.map.info.origin.position.y + self.map.info.resolution * rows
         
@@ -140,19 +143,33 @@ class voronoi_partition:
 
         ##### insert voronoi code here #######
         if self.info_available():
-            # free points in map
-            free_points = self.og_to_world()
-            
+            # robot pos
             robots_pos = np.array([
                 [self.tb0.pose.pose.position.x, self.tb0.pose.pose.position.y],
                 [self.tb1.pose.pose.position.x, self.tb1.pose.pose.position.y],
                 [self.tb2.pose.pose.position.x, self.tb2.pose.pose.position.y]
             ])
 
-            new_robots_pos = self.voronoi(robots_pos, free_points)
+            # free points
+            free_points = self.og_to_world()
 
-            # print('new:\n', new_robots_pos)
+            # unknown points
+            unkonwn_points = self.og_to_world(value=-1)
 
+            # a strategy to pick an unkonwn point for exploration
+            if np.random.random() > 0.7:
+                rnd = np.random.randint(0, 3)
+                target = unkonwn_points[np.argmin([np.inner(robots_pos[rnd]-point, robots_pos[rnd]-point) \
+                    for point in unkonwn_points])]
+            else:
+                target = unkonwn_points[np.random.randint(0, len(unkonwn_points))]
+
+            # voronoi
+            new_robots_pos = self.voronoi(robots_pos, free_points, target=target, cov=0.05)
+
+            # print('----------------------- voronoi -------------------------')
+            # for i in range(3):
+            #     print('robot', i, robots_pos[i], '-->', new_robots_pos[i])
 
             # for publishing to robot 0:
             self.way_pt0.pose.position.x = new_robots_pos[0,0]
