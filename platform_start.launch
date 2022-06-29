@@ -25,6 +25,9 @@
     </include>
     </group>
 
+
+    <node name="map_expand_node" pkg="search_rescue" type="merge_adjust" />
+
     <include file="$(find turtlebot3_gazebo)/launch/multi_map_merge.launch" />
 
     <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find turtlebot3_gazebo)/rviz/multi_turtlebot3_slam.rviz"/> -->

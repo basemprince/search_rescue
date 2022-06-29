@@ -47,6 +47,16 @@ Visualization Manager:
       Unreliable: false
       Use Timestamp: false
       Value: false
+    - Alpha: 0.699999988079071
+      Class: rviz/Map
+      Color Scheme: map
+      Draw Behind: false
+      Enabled: true
+      Name: map_adj
+      Topic: /map_adjusted
+      Unreliable: false
+      Use Timestamp: false
+      Value: true
     - Class: rviz/TF
       Enabled: true
       Frame Timeout: 15
@@ -116,47 +126,50 @@ Visualization Manager:
       Tree:
         map:
           tb3_0/map:
-            tb3_0/odom:
-              tb3_0/base_footprint:
-                tb3_0/base_link:
-                  tb3_0/base_scan:
-                    {}
-                  tb3_0/caster_back_link:
-                    {}
-                  tb3_0/imu_link:
-                    {}
-                  tb3_0/wheel_left_link:
-                    {}
-                  tb3_0/wheel_right_link:
-                    {}
+            {}
+          tb3_0/odom:
+            tb3_0/base_footprint:
+              tb3_0/base_link:
+                tb3_0/base_scan:
+                  {}
+                tb3_0/caster_back_link:
+                  {}
+                tb3_0/imu_link:
+                  {}
+                tb3_0/wheel_left_link:
+                  {}
+                tb3_0/wheel_right_link:
+                  {}
           tb3_1/map:
-            tb3_1/odom:
-              tb3_1/base_footprint:
-                tb3_1/base_link:
-                  tb3_1/base_scan:
-                    {}
-                  tb3_1/caster_back_link:
-                    {}
-                  tb3_1/imu_link:
-                    {}
-                  tb3_1/wheel_left_link:
-                    {}
-                  tb3_1/wheel_right_link:
-                    {}
+            {}
+          tb3_1/odom:
+            tb3_1/base_footprint:
+              tb3_1/base_link:
+                tb3_1/base_scan:
+                  {}
+                tb3_1/caster_back_link:
+                  {}
+                tb3_1/imu_link:
+                  {}
+                tb3_1/wheel_left_link:
+                  {}
+                tb3_1/wheel_right_link:
+                  {}
           tb3_2/map:
-            tb3_2/odom:
-              tb3_2/base_footprint:
-                tb3_2/base_link:
-                  tb3_2/base_scan:
-                    {}
-                  tb3_2/caster_back_link:
-                    {}
-                  tb3_2/imu_link:
-                    {}
-                  tb3_2/wheel_left_link:
-                    {}
-                  tb3_2/wheel_right_link:
-                    {}
+            {}
+          tb3_2/odom:
+            tb3_2/base_footprint:
+              tb3_2/base_link:
+                tb3_2/base_scan:
+                  {}
+                tb3_2/caster_back_link:
+                  {}
+                tb3_2/imu_link:
+                  {}
+                tb3_2/wheel_left_link:
+                  {}
+                tb3_2/wheel_right_link:
+                  {}
       Update Interval: 0
       Value: true
     - Alpha: 0.5
@@ -181,12 +194,12 @@ Visualization Manager:
       Class: rviz/Map
       Color Scheme: map
       Draw Behind: false
-      Enabled: true
+      Enabled: false
       Name: Map_0
       Topic: /tb3_0/map
       Unreliable: false
       Use Timestamp: false
-      Value: true
+      Value: false
     - Class: rviz/Group
       Displays:
         - Alpha: 1
@@ -380,12 +393,12 @@ Visualization Manager:
       Class: rviz/Map
       Color Scheme: map
       Draw Behind: false
-      Enabled: true
+      Enabled: false
       Name: Map_1
       Topic: /tb3_1/map
       Unreliable: false
       Use Timestamp: false
-      Value: true
+      Value: false
     - Class: rviz/Group
       Displays:
         - Alpha: 1
@@ -579,12 +592,12 @@ Visualization Manager:
       Class: rviz/Map
       Color Scheme: map
       Draw Behind: false
-      Enabled: true
+      Enabled: false
       Name: Map_2
       Topic: /tb3_2/map
       Unreliable: false
       Use Timestamp: false
-      Value: true
+      Value: false
     - Class: rviz/Group
       Displays:
         - Alpha: 1
@@ -821,11 +834,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 46.28995895385742
+      Scale: 27.759872436523438
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
-      X: -4.394808292388916
-      Y: -0.521754801273346
+      X: -1.166458010673523
+      Y: 0.14538511633872986
     Saved: ~
 Window Geometry:
   Displays:
