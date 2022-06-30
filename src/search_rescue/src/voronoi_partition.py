@@ -16,8 +16,12 @@ class voronoi_partition:
         self.tb0 = None
         self.tb1 = None
         self.tb2 = None
+        self.tb0_target = None
+        self.tb1_target = None
+        self.tb2_target = None
         self.og_np = None
         self.count = 0
+        self.memory = None
         self.way_pt0 = PoseStamped()
         self.way_pt1 = PoseStamped()
         self.way_pt2 = PoseStamped()
@@ -40,7 +44,7 @@ class voronoi_partition:
         # the occupancy grid in a numpy array ->>>
         self.map = data
         self.og_to_numpy()
-        if self.count % 5 == 0:
+        if self.count % 30 == 0:
             self.voronoi_compute()
         self.count += 1
         
@@ -68,10 +72,10 @@ class voronoi_partition:
     # output: the x and y location on real map
     def og_to_world(self, value=0):
         rows, columns = np.where(self.og_np==value)
-        xs = self.map.info.origin.position.x + self.map.info.resolution * columns
-        ys = self.map.info.origin.position.y + self.map.info.resolution * rows
+        xs = round(self.map.info.origin.position.x,2) + round(self.map.info.resolution,2) * columns
+        ys = round(self.map.info.origin.position.y,2) + round(self.map.info.resolution,2) * rows
         
-        return np.column_stack((xs, ys))
+        return np.column_stack((xs, ys)), np.column_stack((columns, rows))
 
     # convert ocupancy grid to a numpy array
     def og_to_numpy(self):
@@ -94,37 +98,52 @@ class voronoi_partition:
             return np.ones(points.shape[0])
     
     # voronoi tessellation
-    def voronoi(self, generators, points, target=None, cov=1, n_iter=1):
+    def voronoi(self, generators, points, points_grids, new_points, new_points_grids, target=None, cov=1, n_iter=1):
         n_generator = generators.shape[0]
-        cost = 1.0E-10 * np.ones(n_iter)
-        color = cm.rainbow(np.linspace(0, 1, n_generator))
 
         for it in range(n_iter):
-            # initialize weights
-            weights = self.density_function(points, target=target, cov=cov)
-
             # voronoi tessellation
             vor_indices = [np.argmin([np.inner(generator - point, generator - point) \
                 for generator in generators]) for point in points]
             vor_indices = np.array(vor_indices)
 
-            # mass and centriod
-            mass = np.bincount(vor_indices, weights=weights)
-            centroids_x = np.bincount(vor_indices, weights=weights*points[:,0])
-            centroids_y = np.bincount(vor_indices, weights=weights*points[:,1])
-            for i in range(n_generator):
-                if mass[i] > 0:
-                    centroids_x[i] /= float(mass[i])
-                    centroids_y[i] /= float(mass[i])
+            if target is None:
+                centroids = np.zeros(generators.shape)
+                new_points_list = new_points_grids.tolist()
+                for i in range(n_generator):
+                    points_i = points[vor_indices==i]
+                    points_i_list = points_grids[vor_indices==i].tolist()
+                    new_points_i = np.array([p for p, id in zip(points_i, points_i_list) if id in new_points_list])
+                    if len(new_points_i) > 20:
+                        target_i = new_points_i[np.argmax([np.inner(generators[i]-point, generators[i]-point) \
+                            for point in new_points_i])]
+                    elif len(new_points) > 50:
+                        target_i = new_points[np.argmax([np.inner(generators[i]-point, generators[i]-point) \
+                            for point in new_points])]
+                    else:
+                        target_i = points[np.argmax([np.inner(generators[i]-point, generators[i]-point) \
+                            for point in points])]
+                    weights_i = self.density_function(points_i, target_i, cov/10).reshape(-1,1)
+                    centroids[i] = np.sum(weights_i * points_i, axis=0) / np.sum(weights_i)
+            else:
+                weights = self.density_function(points, target=target, cov=cov)
+                # for i in range(n_generator):
+                #     points_i = points[vor_indices==i]
+                #     weights_i = weights[vor_indices==i].reshape(-1,1)
+                #     centroids[i] = np.sum(points_i * weights_i, axis=0) / np.sum(weights_i)
 
-            # coverage cost
-            cost[it] = 0.0
-            for i in range(points.shape[0]):
-                cost[it] += ((points[:,0][i] - centroids_x[vor_indices[i]]) ** 2 + \
-                             (points[:,1][i] - centroids_y[vor_indices[i]]) ** 2)
+                # mass and centriod
+                mass = np.bincount(vor_indices, weights=weights)
+                centroids_x = np.bincount(vor_indices, weights=weights*points[:,0])
+                centroids_y = np.bincount(vor_indices, weights=weights*points[:,1])
+                for i in range(n_generator):
+                    if mass[i] > 0:
+                        centroids_x[i] /= float(mass[i])
+                        centroids_y[i] /= float(mass[i])
+                centroids = np.column_stack((centroids_x, centroids_y))
             
             # update
-            generators = np.column_stack((centroids_x, centroids_y))
+            generators = centroids
         
         return generators
 
@@ -151,25 +170,28 @@ class voronoi_partition:
             ])
 
             # free points
-            free_points = self.og_to_world()
-
-            # unknown points
-            unkonwn_points = self.og_to_world(value=-1)
-
-            # a strategy to pick an unkonwn point for exploration
-            if np.random.random() > 0.7:
-                rnd = np.random.randint(0, 3)
-                target = unkonwn_points[np.argmin([np.inner(robots_pos[rnd]-point, robots_pos[rnd]-point) \
-                    for point in unkonwn_points])]
+            free_points, free_points_grids = self.og_to_world()
+            if self.memory is not None:
+                cur = free_points_grids.tolist()
+                pre = self.memory.tolist()
+                new_points = np.array([p for p, id in zip(free_points, cur) if id not in pre])
+                new_points_grids = np.array([id for id in cur if id not in pre])
             else:
-                target = unkonwn_points[np.random.randint(0, len(unkonwn_points))]
+                new_points = np.copy(free_points)
+                new_points_grids = np.copy(free_points_grids)
+            self.memory = np.copy(free_points_grids)
 
-            # voronoi
-            new_robots_pos = self.voronoi(robots_pos, free_points, target=target, cov=0.05)
+            new_robots_pos = self.voronoi(robots_pos, free_points, free_points_grids,
+                new_points, new_points_grids, cov=1)
+            
+            for i, pos in enumerate(new_robots_pos):
+                new_robots_pos[i] = free_points[np.argmin([np.inner(pos-point, pos-point) \
+                    for point in free_points])]
 
-            # print('----------------------- voronoi -------------------------')
-            # for i in range(3):
-            #     print('robot', i, robots_pos[i], '-->', new_robots_pos[i])
+            print('----------------------- voronoi -------------------------')
+            print('total points:', len(free_points), 'new points:', len(new_points))
+            for i in range(3):
+                print('robot', i, robots_pos[i], '-->', new_robots_pos[i])
 
             # for publishing to robot 0:
             self.way_pt0.pose.position.x = new_robots_pos[0,0]
