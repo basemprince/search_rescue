@@ -1,5 +1,8 @@
 <launch>
-    <include file="$(find turtlebot3_gazebo)/launch/multi_turtlebot3.launch" />
+    <include file="$(find turtlebot3_gazebo)/launch/multi_turtlebot3.launch" >
+    <arg name="set_gui" value ="false"/>
+    </include>
+
 
     <group ns="tb3_0">
     <include file="$(find turtlebot3_slam)/launch/turtlebot3_gmapping.launch">
