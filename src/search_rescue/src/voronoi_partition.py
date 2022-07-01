@@ -3,6 +3,7 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import OccupancyGrid, MapMetaData, Odometry
+from map_msgs.msg import OccupancyGridUpdate
 import numpy as np
 
 import matplotlib.pyplot as plt
@@ -16,23 +17,46 @@ class voronoi_partition:
         self.tb0 = None
         self.tb1 = None
         self.tb2 = None
-        self.tb0_target = None
-        self.tb1_target = None
-        self.tb2_target = None
         self.og_np = None
         self.count = 0
         self.memory = None
+        self.cm0 = None
+        self.cm1 = None
+        self.cm2 = None
         self.way_pt0 = PoseStamped()
         self.way_pt1 = PoseStamped()
         self.way_pt2 = PoseStamped()
+
         rospy.init_node('voronoi_node', anonymous=False)
+
+        # robot odom subscriber
         rospy.Subscriber('tb3_0/odom', Odometry , self.tb0_callback)
         rospy.Subscriber('tb3_1/odom', Odometry , self.tb1_callback)
         rospy.Subscriber('tb3_2/odom', Odometry , self.tb2_callback)
+
+        # occupancy grid subscriber
         rospy.Subscriber('map', OccupancyGrid , self.og_callback)
+
+        # cost map subscriber
+        # rospy.Subscriber('tb3_0/move_base/global_costmap/costmap_updates',
+        #     OccupancyGridUpdate , self.cm0_callback)
+        # rospy.Subscriber('tb3_1/move_base/global_costmap/costmap_updates',
+        #     OccupancyGridUpdate , self.cm1_callback)
+        # rospy.Subscriber('tb3_2/move_base/global_costmap/costmap_updates',
+        #     OccupancyGridUpdate , self.cm2_callback)
+        
+        rospy.Subscriber('tb3_0/move_base/global_costmap/costmap',
+            OccupancyGrid , self.cm0_callback)
+        rospy.Subscriber('tb3_1/move_base/global_costmap/costmap',
+            OccupancyGrid , self.cm1_callback)
+        rospy.Subscriber('tb3_2/move_base/global_costmap/costmap',
+            OccupancyGrid , self.cm2_callback)
+
+        # robot target publisher
         self.pub0= rospy.Publisher("tb3_0/move_base_simple/goal",PoseStamped, queue_size=5)
         self.pub1= rospy.Publisher("tb3_1/move_base_simple/goal",PoseStamped, queue_size=5)
         self.pub2= rospy.Publisher("tb3_2/move_base_simple/goal",PoseStamped, queue_size=5)
+
         try:
           rospy.spin()
         except KeyboardInterrupt:
@@ -44,7 +68,7 @@ class voronoi_partition:
         # the occupancy grid in a numpy array ->>>
         self.map = data
         self.og_to_numpy()
-        if self.count % 30 == 0:
+        if self.count % 20 == 0:
             self.voronoi_compute()
         self.count += 1
         
@@ -67,6 +91,24 @@ class voronoi_partition:
         self.tb2 = data
         # self.voronoi_compute()
     
+    # call back function for robot1 cost map
+    def cm0_callback(self, data):
+        # rospy.loginfo("recieved data - cm0")
+        self.cm0 = np.asarray(data.data, dtype=np.int8).reshape(data.info.height, data.info.width)
+        # print('0-', self.cm0.shape)
+    
+    # call back function for robot1 cost map
+    def cm1_callback(self, data):
+        # rospy.loginfo("recieved data - cm1")
+        self.cm1 = np.asarray(data.data, dtype=np.int8).reshape(data.info.height, data.info.width)
+        # print('1-', self.cm1.shape)
+    
+    # call back function for robot1 cost map
+    def cm2_callback(self, data):
+        # rospy.loginfo("recieved data - cm2")
+        self.cm2 = np.asarray(data.data, dtype=np.int8).reshape(data.info.height, data.info.width)
+        # print('2-', self.cm2.shape)
+    
     # convert ocupancy grid to real world map coords
     # input: the column and row number in the occupancy grid
     # output: the x and y location on real map
@@ -88,7 +130,9 @@ class voronoi_partition:
     # check
     def info_available(self):
         return self.tb0 is not None and self.tb1 is not None and \
-            self.tb2 is not None and self.og_np is not None
+            self.tb2 is not None and self.og_np is not None and \
+            self.cm0 is not None and self.cm1 is not None and \
+            self.cm2 is not None
         
     # density function
     def density_function(self, points, target=None, cov=1):
@@ -121,8 +165,7 @@ class voronoi_partition:
                         target_i = new_points[np.argmax([np.inner(generators[i]-point, generators[i]-point) \
                             for point in new_points])]
                     else:
-                        target_i = points[np.argmax([np.inner(generators[i]-point, generators[i]-point) \
-                            for point in points])]
+                        target_i = points[np.random.randint(0,len(points))]
                     weights_i = self.density_function(points_i, target_i, cov/10).reshape(-1,1)
                     centroids[i] = np.sum(weights_i * points_i, axis=0) / np.sum(weights_i)
             else:
@@ -146,19 +189,22 @@ class voronoi_partition:
             generators = centroids
         
         return generators
+    
+    def get_new_points(self, free_points, free_points_grids):
+        if self.memory is not None:
+            cur = free_points_grids.tolist()
+            pre = self.memory.tolist()
+            new_points = np.array([p for p, id in zip(free_points, cur) if id not in pre])
+            new_points_grids = np.array([id for id in cur if id not in pre])
+        else:
+            new_points = np.copy(free_points)
+            new_points_grids = np.copy(free_points_grids)
+        self.memory = np.copy(free_points_grids)
+
+        return new_points, new_points_grids
 
     # calculate voronoi partitions using occupancy grid and robot location
     def voronoi_compute(self):
-
-        ## position
-        # x = self.tb0.pose.pose.position.x
-        # y = self.tb0.pose.pose.position.y
-        ## orientatoin in quaternion
-        # xo = self.tb0.pose.pose.orientation.x
-        # yo = self.tb0.pose.pose.orientation.y
-        # zo = self.tb0.pose.pose.orientation.z
-        # wo = self.tb0.pose.pose.orientation.w
-
 
         ##### insert voronoi code here #######
         if self.info_available():
@@ -171,22 +217,22 @@ class voronoi_partition:
 
             # free points
             free_points, free_points_grids = self.og_to_world()
-            if self.memory is not None:
-                cur = free_points_grids.tolist()
-                pre = self.memory.tolist()
-                new_points = np.array([p for p, id in zip(free_points, cur) if id not in pre])
-                new_points_grids = np.array([id for id in cur if id not in pre])
-            else:
-                new_points = np.copy(free_points)
-                new_points_grids = np.copy(free_points_grids)
-            self.memory = np.copy(free_points_grids)
+            
+            # new points
+            new_points, new_points_grids = self.get_new_points(free_points, free_points_grids)
 
+            # voronoi
             new_robots_pos = self.voronoi(robots_pos, free_points, free_points_grids,
                 new_points, new_points_grids, cov=1)
             
-            for i, pos in enumerate(new_robots_pos):
-                new_robots_pos[i] = free_points[np.argmin([np.inner(pos-point, pos-point) \
-                    for point in free_points])]
+            new_robots_pos[0] = free_points[np.argmin([np.inner(new_robots_pos[0]-point, new_robots_pos[0]-point) \
+                for point, grid in zip(free_points, free_points_grids) if self.cm0[grid[1],grid[0]]<85])]
+            
+            new_robots_pos[1] = free_points[np.argmin([np.inner(new_robots_pos[1]-point, new_robots_pos[1]-point) \
+                for point, grid in zip(free_points, free_points_grids) if self.cm1[grid[1],grid[0]]<85])]
+            
+            new_robots_pos[2] = free_points[np.argmin([np.inner(new_robots_pos[2]-point, new_robots_pos[2]-point) \
+                for point, grid in zip(free_points, free_points_grids) if self.cm2[grid[1],grid[0]]<85])]
 
             print('----------------------- voronoi -------------------------')
             print('total points:', len(free_points), 'new points:', len(new_points))
