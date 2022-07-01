@@ -11,10 +11,10 @@ local_costmap:
   publish_frequency: 10.0
   transform_tolerance: 0.5  
 
-  # static_map: false  
+  
   rolling_window: true
-  width: 3
-  height: 3
+  width: 25
+  height: 25
   resolution: 0.05
 
   plugins:
@@ -28,7 +28,7 @@ local_costmap:
 
 
   inflation:
-    inflation_radius: 0.75
+    inflation_radius: 0.4
     cost_scaling_factor: 4 # larger number = lower cost elevation
 
   #robot_radius: 0.17

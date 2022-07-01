@@ -5,6 +5,7 @@
   <arg name="set_base_frame" default="base_footprint"/>
   <arg name="set_odom_frame" default="odom"/>
   <arg name="set_map_frame"  default="map"/>
+  <arg name="set_tf_delay"  default="0"/>
 
   <!-- Gmapping -->
   <node pkg="gmapping" type="slam_gmapping" name="turtlebot3_slam_gmapping" output="screen">
@@ -12,7 +13,7 @@
     <param name="odom_frame" value="$(arg set_odom_frame)"/>
     <param name="map_frame"  value="$(arg set_map_frame)"/>
     <param name="map_update_interval" value="2.0"/>
-    <param name="maxUrange" value="3.0"/>
+    <param name="maxUrange" value="80.0"/>
     <param name="sigma" value="0.05"/>
     <param name="kernelSize" value="1"/>
     <param name="lstep" value="0.05"/>
@@ -21,14 +22,14 @@
     <param name="lsigma" value="0.075"/>
     <param name="ogain" value="3.0"/>
     <param name="lskip" value="0"/>
-    <param name="minimumScore" value="50"/>
+    <param name="minimumScore" value="95"/>
     <param name="srr" value="0.1"/>
     <param name="srt" value="0.2"/>
     <param name="str" value="0.1"/>
     <param name="stt" value="0.2"/>
     <param name="linearUpdate" value="1.0"/>
     <param name="angularUpdate" value="0.2"/>
-    <param name="temporalUpdate" value="0.5"/>
+    <param name="temporalUpdate" value="-1.0"/>
     <param name="resampleThreshold" value="0.5"/>
     <param name="particles" value="100"/>
     <param name="xmin" value="-10.0"/>
@@ -40,5 +41,6 @@
     <param name="llsamplestep" value="0.01"/>
     <param name="lasamplerange" value="0.005"/>
     <param name="lasamplestep" value="0.005"/>
+    <param name="transform_publish_period" value="$(arg set_tf_delay)"/>
   </node>
 </launch>

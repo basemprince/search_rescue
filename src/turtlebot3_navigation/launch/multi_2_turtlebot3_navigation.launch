@@ -5,8 +5,6 @@
   <arg name="map_file" default="$(find turtlebot3_navigation)/maps/house.yaml"/>
   <arg name="open_rviz" default="false"/>
   <arg name="move_forward_only" default="false"/>
-  <arg name="first_tb3" default="tb3_0" />
-  <arg name="second_tb3" default="tb3_1" />
   <arg name="third_tb3" default="tb3_2" />
 
 
@@ -17,47 +15,17 @@
   
   <group ns = "$(arg third_tb3)">
   <!-- Map server -->
-  <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)"/>
+  <!-- <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)"/> -->
 
-  <!-- AMCL -->
- <node pkg="amcl" type="amcl" name="amcl">
-   <param name="use_map_topic"             value="true"/>
-   <remap from="map" to="tb3_2/map"/>
-   <param name="min_particles"             value="500"/>
-   <param name="max_particles"             value="3000"/>
-   <param name="kld_err"                   value="0.02"/>
-   <param name="update_min_d"              value="0.20"/>
-   <param name="update_min_a"              value="0.20"/>
-   <param name="resample_interval"         value="1"/>
-   <param name="transform_tolerance"       value="0.5"/>
-   <param name="recovery_alpha_slow"       value="0.00"/>
-   <param name="recovery_alpha_fast"       value="0.00"/>
-   <param name="initial_pose_x"            value="$(arg third_tb3_x_pos)"/>
-   <param name="initial_pose_y"            value="$(arg third_tb3_y_pos)"/>
-   <param name="initial_pose_a"            value="$(arg third_tb3_yaw)"/>
-   <param name="gui_publish_rate"          value="50.0"/>
-
-   <remap from="scan"                      to="scan"/>
-   <param name="laser_max_range"           value="3.5"/>
-   <param name="laser_max_beams"           value="180"/>
-   <param name="laser_z_hit"               value="0.5"/>
-   <param name="laser_z_short"             value="0.05"/>
-   <param name="laser_z_max"               value="0.05"/>
-   <param name="laser_z_rand"              value="0.5"/>
-   <param name="laser_sigma_hit"           value="0.2"/>
-   <param name="laser_lambda_short"        value="0.1"/>
-   <param name="laser_likelihood_max_dist" value="2.0"/>
-   <param name="laser_model_type"          value="likelihood_field"/>
-
-   <param name="odom_model_type"           value="diff"/>
-   <param name="odom_alpha1"               value="0.1"/>
-   <param name="odom_alpha2"               value="0.1"/>
-   <param name="odom_alpha3"               value="0.1"/>
-   <param name="odom_alpha4"               value="0.1"/>
-   <param name="odom_frame_id"             value="/$(arg third_tb3)/odom"/>
-   <param name="base_frame_id"             value="/$(arg third_tb3)/base_footprint"/>
-
- </node>
+  <node pkg="fake_localization" type="fake_localization" name="fake_localization" respawn="false" output="screen">
+    <!-- <param name="tf_prefix" value="tb3_2" /> -->
+    <param name="odom_frame_id"             value="$(arg third_tb3)/odom"/>
+    <param name="base_frame_id"             value="$(arg third_tb3)/base_footprint"/>
+    <!-- <param name="delta_x" value="-16.1" />
+    <param name="delta_y" value="-16.1" />
+    <param name="delta_yaw" value="0.0" /> -->
+    <param name="global_frame_id" value="map" />
+  </node>
 
 
 

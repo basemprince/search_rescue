@@ -6,17 +6,17 @@
   <arg name="first_tb3_x_pos" default="-7.0"/>
   <arg name="first_tb3_y_pos" default="-1.0"/>
   <arg name="first_tb3_z_pos" default=" 0.0"/>
-  <arg name="first_tb3_yaw"   default=" 0.0"/>
+  <arg name="first_tb3_yaw"   default=" 0"/>
 
-  <arg name="second_tb3_x_pos" default=" 7.0"/>
-  <arg name="second_tb3_y_pos" default="-1.0"/>
+  <arg name="second_tb3_x_pos" default=" -7.0"/>
+  <arg name="second_tb3_y_pos" default="-2.0"/>
   <arg name="second_tb3_z_pos" default=" 0.0"/>
-  <arg name="second_tb3_yaw"   default=" 0.0"/>
+  <arg name="second_tb3_yaw"   default=" 0"/>
 
-  <arg name="third_tb3_x_pos" default=" 0.5"/>
-  <arg name="third_tb3_y_pos" default=" 3.0"/>
+  <arg name="third_tb3_x_pos" default=" -6.5"/>
+  <arg name="third_tb3_y_pos" default=" -1.0"/>
   <arg name="third_tb3_z_pos" default=" 0.0"/>
-  <arg name="third_tb3_yaw"   default=" 0.0"/>
+  <arg name="third_tb3_yaw"   default=" 0"/>
 
   <group ns="$(arg first_tb3)/map_merge">
     <param name="init_pose_x"   value="$(arg first_tb3_x_pos)"/>
@@ -44,10 +44,10 @@
   <node pkg="multirobot_map_merge" type="map_merge" respawn="false" name="map_merge" output="screen">
     <param name="robot_map_topic" value="map"/>
     <param name="robot_map_updates_topic" value="map_updates"/>
-    <param name="robot_namespace" value="tb3"/>
+    <param name="robot_namespace" value="tb3_"/>
     <param name="merged_map_topic" value="map"/>
     <param name="world_frame" value="map"/>
-    <param name="known_init_poses" value="false"/>
+    <param name="known_init_poses" value="true"/>
     <!-- <param name="merging_rate" value="0.5"/>
     <param name="discovery_rate" value="0.05"/>
     <param name="estimation_rate" value="0.1"/>

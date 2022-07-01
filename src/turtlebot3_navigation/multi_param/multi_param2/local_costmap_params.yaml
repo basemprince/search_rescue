@@ -13,12 +13,12 @@ local_costmap:
 
   # static_map: false  
   rolling_window: true
-  width: 3
-  height: 3
+  width: 25
+  height: 25
   resolution: 0.05
 
   plugins:
-    - {name: multibot_layerer, type: "multibot_layer_namespace::MultibotLayer"}
+    # - {name: multibot_layerer, type: "multibot_layer_namespace::MultibotLayer"}
     - {name: obstacle_layer, type: "costmap_2d::ObstacleLayer"}
     - {name: inflation, type: "costmap_2d::InflationLayer"}
 
@@ -28,7 +28,7 @@ local_costmap:
 
 
   inflation:
-    inflation_radius: 0.75
+    inflation_radius: 0.4
     cost_scaling_factor: 4 # larger number = lower cost elevation
 
   #robot_radius: 0.17
