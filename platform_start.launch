@@ -27,6 +27,7 @@
 
 
     <node name="map_expand_node" pkg="search_rescue" type="merge_adjust" />
+    <node name="target_pose_pub" pkg="search_rescue" type="target_pub.py" />
 
     <include file="$(find turtlebot3_gazebo)/launch/multi_map_merge.launch" />
 
