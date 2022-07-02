@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
+from re import U
 import rospy
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, PointStamped
 from nav_msgs.msg import OccupancyGrid, MapMetaData, Odometry
 from map_msgs.msg import OccupancyGridUpdate
 import numpy as np
@@ -19,10 +20,11 @@ class voronoi_partition:
         self.tb2 = None
         self.og_np = None
         self.count = 0
-        self.memory = None
+        self.freq = 30
         self.cm0 = None
         self.cm1 = None
         self.cm2 = None
+        self.target = None
         self.way_pt0 = PoseStamped()
         self.way_pt1 = PoseStamped()
         self.way_pt2 = PoseStamped()
@@ -30,32 +32,28 @@ class voronoi_partition:
         rospy.init_node('voronoi_node', anonymous=False)
 
         # robot odom subscriber
-        rospy.Subscriber('tb3_0/odom', Odometry , self.tb0_callback)
-        rospy.Subscriber('tb3_1/odom', Odometry , self.tb1_callback)
-        rospy.Subscriber('tb3_2/odom', Odometry , self.tb2_callback)
+        rospy.Subscriber('tb3_0/odom', Odometry, self.tb0_callback)
+        rospy.Subscriber('tb3_1/odom', Odometry, self.tb1_callback)
+        rospy.Subscriber('tb3_2/odom', Odometry, self.tb2_callback)
 
         # occupancy grid subscriber
         rospy.Subscriber('map', OccupancyGrid , self.og_callback)
 
         # cost map subscriber
-        # rospy.Subscriber('tb3_0/move_base/global_costmap/costmap_updates',
-        #     OccupancyGridUpdate , self.cm0_callback)
-        # rospy.Subscriber('tb3_1/move_base/global_costmap/costmap_updates',
-        #     OccupancyGridUpdate , self.cm1_callback)
-        # rospy.Subscriber('tb3_2/move_base/global_costmap/costmap_updates',
-        #     OccupancyGridUpdate , self.cm2_callback)
-        
         rospy.Subscriber('tb3_0/move_base/global_costmap/costmap',
             OccupancyGrid , self.cm0_callback)
         rospy.Subscriber('tb3_1/move_base/global_costmap/costmap',
             OccupancyGrid , self.cm1_callback)
         rospy.Subscriber('tb3_2/move_base/global_costmap/costmap',
             OccupancyGrid , self.cm2_callback)
+        
+        # target subscriber
+        rospy.Subscriber('target_pose', PointStamped, self.target_callback)
 
         # robot target publisher
-        self.pub0= rospy.Publisher("tb3_0/move_base_simple/goal",PoseStamped, queue_size=5)
-        self.pub1= rospy.Publisher("tb3_1/move_base_simple/goal",PoseStamped, queue_size=5)
-        self.pub2= rospy.Publisher("tb3_2/move_base_simple/goal",PoseStamped, queue_size=5)
+        self.pub0= rospy.Publisher("tb3_0/move_base_simple/goal", PoseStamped, queue_size=5)
+        self.pub1= rospy.Publisher("tb3_1/move_base_simple/goal", PoseStamped, queue_size=5)
+        self.pub2= rospy.Publisher("tb3_2/move_base_simple/goal", PoseStamped, queue_size=5)
 
         try:
           rospy.spin()
@@ -68,9 +66,12 @@ class voronoi_partition:
         # the occupancy grid in a numpy array ->>>
         self.map = data
         self.og_to_numpy()
-        if self.count % 20 == 0:
+        if self.target is None:
+            if self.count % self.freq == 0:
+                self.voronoi_compute()
+            self.count += 1
+        else:
             self.voronoi_compute()
-        self.count += 1
         
     # call back function for robot1 position
     def tb0_callback(self, data):
@@ -109,6 +110,11 @@ class voronoi_partition:
         self.cm2 = np.asarray(data.data, dtype=np.int8).reshape(data.info.height, data.info.width)
         # print('2-', self.cm2.shape)
     
+    # call back function for rescue target
+    def target_callback(self, data):
+        # rospy.loginfo("recieved data - target")
+        self.target = data
+    
     # convert ocupancy grid to real world map coords
     # input: the column and row number in the occupancy grid
     # output: the x and y location on real map
@@ -117,7 +123,7 @@ class voronoi_partition:
         xs = round(self.map.info.origin.position.x,2) + round(self.map.info.resolution,2) * columns
         ys = round(self.map.info.origin.position.y,2) + round(self.map.info.resolution,2) * rows
         
-        return np.column_stack((xs, ys)), np.column_stack((columns, rows))
+        return np.column_stack((xs, ys))
 
     # convert ocupancy grid to a numpy array
     def og_to_numpy(self):
@@ -142,7 +148,7 @@ class voronoi_partition:
             return np.ones(points.shape[0])
     
     # voronoi tessellation
-    def voronoi(self, generators, points, points_grids, new_points, new_points_grids, target=None, cov=1, n_iter=1):
+    def voronoi(self, generators, points, target, cov=1, n_iter=1):
         n_generator = generators.shape[0]
 
         for it in range(n_iter):
@@ -151,57 +157,25 @@ class voronoi_partition:
                 for generator in generators]) for point in points]
             vor_indices = np.array(vor_indices)
 
-            if target is None:
-                centroids = np.zeros(generators.shape)
-                new_points_list = new_points_grids.tolist()
+            centroids = np.empty(generators.shape)
+            if self.target is None:
+                weights = self.density_function(points, target, cov)
                 for i in range(n_generator):
                     points_i = points[vor_indices==i]
-                    points_i_list = points_grids[vor_indices==i].tolist()
-                    new_points_i = np.array([p for p, id in zip(points_i, points_i_list) if id in new_points_list])
-                    if len(new_points_i) > 20:
-                        target_i = new_points_i[np.argmax([np.inner(generators[i]-point, generators[i]-point) \
-                            for point in new_points_i])]
-                    elif len(new_points) > 50:
-                        target_i = new_points[np.argmax([np.inner(generators[i]-point, generators[i]-point) \
-                            for point in new_points])]
-                    else:
-                        target_i = points[np.random.randint(0,len(points))]
-                    weights_i = self.density_function(points_i, target_i, cov/10).reshape(-1,1)
+                    weights_i = weights[vor_indices==i].reshape(-1,1)
                     centroids[i] = np.sum(weights_i * points_i, axis=0) / np.sum(weights_i)
             else:
-                weights = self.density_function(points, target=target, cov=cov)
-                # for i in range(n_generator):
-                #     points_i = points[vor_indices==i]
-                #     weights_i = weights[vor_indices==i].reshape(-1,1)
-                #     centroids[i] = np.sum(points_i * weights_i, axis=0) / np.sum(weights_i)
-
-                # mass and centriod
-                mass = np.bincount(vor_indices, weights=weights)
-                centroids_x = np.bincount(vor_indices, weights=weights*points[:,0])
-                centroids_y = np.bincount(vor_indices, weights=weights*points[:,1])
+                target = np.array([self.target.point.x, self.target.point.y])
+                weights = self.density_function(points, target, cov)
                 for i in range(n_generator):
-                    if mass[i] > 0:
-                        centroids_x[i] /= float(mass[i])
-                        centroids_y[i] /= float(mass[i])
-                centroids = np.column_stack((centroids_x, centroids_y))
+                    points_i = points[vor_indices==i]
+                    weights_i = weights[vor_indices==i].reshape(-1,1)
+                    centroids[i] = np.sum(weights_i * points_i, axis=0) / np.sum(weights_i)
             
             # update
-            generators = centroids
+            generators = np.copy(centroids)
         
         return generators
-    
-    def get_new_points(self, free_points, free_points_grids):
-        if self.memory is not None:
-            cur = free_points_grids.tolist()
-            pre = self.memory.tolist()
-            new_points = np.array([p for p, id in zip(free_points, cur) if id not in pre])
-            new_points_grids = np.array([id for id in cur if id not in pre])
-        else:
-            new_points = np.copy(free_points)
-            new_points_grids = np.copy(free_points_grids)
-        self.memory = np.copy(free_points_grids)
-
-        return new_points, new_points_grids
 
     # calculate voronoi partitions using occupancy grid and robot location
     def voronoi_compute(self):
@@ -214,28 +188,31 @@ class voronoi_partition:
                 [self.tb1.pose.pose.position.x, self.tb1.pose.pose.position.y],
                 [self.tb2.pose.pose.position.x, self.tb2.pose.pose.position.y]
             ])
+            if self.init_pose is None:
+                self.init_pose = np.copy(robots_pos)
 
             # free points
-            free_points, free_points_grids = self.og_to_world()
-            
-            # new points
-            new_points, new_points_grids = self.get_new_points(free_points, free_points_grids)
+            free_points = self.og_to_world()
+
+            # unknown points
+            unknown_points = self.og_to_world(-1)
 
             # voronoi
-            new_robots_pos = self.voronoi(robots_pos, free_points, free_points_grids,
-                new_points, new_points_grids, cov=1)
+            target = unknown_points[np.random.randint(0,len(unknown_points))]
+            new_robots_pos = self.voronoi(robots_pos, free_points, target, cov=1)
+
+            # cost
+            # new_robots_pos[0] = free_points[np.argmin([np.inner(new_robots_pos[0]-point, new_robots_pos[0]-point) \
+            #     for point, grid in zip(free_points, free_points_grids) if self.cm0[grid[1],grid[0]]<99])]
             
-            new_robots_pos[0] = free_points[np.argmin([np.inner(new_robots_pos[0]-point, new_robots_pos[0]-point) \
-                for point, grid in zip(free_points, free_points_grids) if self.cm0[grid[1],grid[0]]<85])]
+            # new_robots_pos[1] = free_points[np.argmin([np.inner(new_robots_pos[1]-point, new_robots_pos[1]-point) \
+            #     for point, grid in zip(free_points, free_points_grids) if self.cm1[grid[1],grid[0]]<99])]
             
-            new_robots_pos[1] = free_points[np.argmin([np.inner(new_robots_pos[1]-point, new_robots_pos[1]-point) \
-                for point, grid in zip(free_points, free_points_grids) if self.cm1[grid[1],grid[0]]<85])]
-            
-            new_robots_pos[2] = free_points[np.argmin([np.inner(new_robots_pos[2]-point, new_robots_pos[2]-point) \
-                for point, grid in zip(free_points, free_points_grids) if self.cm2[grid[1],grid[0]]<85])]
+            # new_robots_pos[2] = free_points[np.argmin([np.inner(new_robots_pos[2]-point, new_robots_pos[2]-point) \
+            #     for point, grid in zip(free_points, free_points_grids) if self.cm2[grid[1],grid[0]]<99])]
 
             print('----------------------- voronoi -------------------------')
-            print('total points:', len(free_points), 'new points:', len(new_points))
+            print('target:', target)
             for i in range(3):
                 print('robot', i, robots_pos[i], '-->', new_robots_pos[i])
 
