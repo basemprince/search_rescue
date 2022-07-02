@@ -199,6 +199,13 @@ class voronoi_partition:
             target = unknown_points[np.random.randint(0,len(unknown_points))]
             new_robots_pos = self.voronoi(robots_pos, free_points, target, cov=1)
 
+            new_robots_pos[0] = free_points[np.argmin([np.inner(new_robots_pos[0]-point, new_robots_pos[0]-point) \
+                for point in free_points])]
+            new_robots_pos[1] = free_points[np.argmin([np.inner(new_robots_pos[1]-point, new_robots_pos[1]-point) \
+                for point in free_points])]
+            new_robots_pos[2] = free_points[np.argmin([np.inner(new_robots_pos[2]-point, new_robots_pos[2]-point) \
+                for point in free_points])]
+
             # cost
             # new_robots_pos[0] = free_points[np.argmin([np.inner(new_robots_pos[0]-point, new_robots_pos[0]-point) \
             #     for point, grid in zip(free_points, free_points_grids) if self.cm0[grid[1],grid[0]]<99])]
