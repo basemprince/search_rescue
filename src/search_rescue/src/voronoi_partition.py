@@ -20,7 +20,9 @@ class voronoi_partition:
         self.tb2 = None
         self.og_np = None
         self.count = 0
-        self.freq = 30
+        self.freq = 20
+        self.cost_th = 20
+        self.dist_th = 0.8
         self.cm0 = None
         self.cm1 = None
         self.cm2 = None
@@ -188,7 +190,7 @@ class voronoi_partition:
                     centroids[i] = np.sum(weights_i * points_i, axis=0) / np.sum(weights_i)
             else:
                 target = np.array([self.target.point.x, self.target.point.y])
-                weights = self.density_function(points, target, cov)
+                weights = self.density_function(points, target, cov/10)
                 for i in range(n_generator):
                     points_i = points[vor_indices==i]
                     weights_i = weights[vor_indices==i].reshape(-1,1)
@@ -227,24 +229,35 @@ class voronoi_partition:
             self.exp_target = target
             self.tb_goal = np.copy(new_robots_pos)
 
-            # adjust goal pos by costmap
+            # adjust goal so that robots are not too close to each other
             dist0 = np.array([np.inner(new_robots_pos[0]-point, new_robots_pos[0]-point) for point in free_points])
-            cost0 = np.array([self.cm0[grid[1],grid[0]] for grid in free_points_grids])
-            free_points0 = free_points[cost0 < 20]
-            dist0 = dist0[cost0 < 20]
-            new_robots_pos[0] = free_points0[np.argmin(dist0)]
-
             dist1 = np.array([np.inner(new_robots_pos[1]-point, new_robots_pos[1]-point) for point in free_points])
-            cost1 = np.array([self.cm1[grid[1],grid[0]] for grid in free_points_grids])
-            free_points1 = free_points[cost1 < 20]
-            dist1 = dist1[cost1 < 20]
-            new_robots_pos[1] = free_points1[np.argmin(dist1)]
-
             dist2 = np.array([np.inner(new_robots_pos[2]-point, new_robots_pos[2]-point) for point in free_points])
+
+            if np.inner(new_robots_pos[0]-new_robots_pos[2], new_robots_pos[0]-new_robots_pos[2]) < self.dist_th**2:
+                dist0_ = dist0[dist2 >= self.dist_th**2]
+                free0_ = free_points[dist2 >= self.dist_th**2]
+                new_robots_pos[0] = free0_[np.argmin(dist0_)]
+            if np.inner(new_robots_pos[1]-new_robots_pos[2], new_robots_pos[1]-new_robots_pos[2]) < self.dist_th**2:
+                dist1_ = dist1[dist2 >= self.dist_th**2]
+                free1_ = free_points[dist2 >= self.dist_th**2]
+                new_robots_pos[1] = free1_[np.argmin(dist1_)]
+
+            # adjust goal pos by costmap
+            cost0 = np.array([self.cm0[grid[1],grid[0]] for grid in free_points_grids])
+            free0 = free_points[cost0 < self.cost_th]
+            dist0 = dist0[cost0 < self.cost_th]
+            new_robots_pos[0] = free0[np.argmin(dist0)]
+
+            cost1 = np.array([self.cm1[grid[1],grid[0]] for grid in free_points_grids])
+            free1 = free_points[cost1 < self.cost_th]
+            dist1 = dist1[cost1 < self.cost_th]
+            new_robots_pos[1] = free1[np.argmin(dist1)]
+
             cost2 = np.array([self.cm2[grid[1],grid[0]] for grid in free_points_grids])
-            free_points2 = free_points[cost2 < 20]
-            dist2 = dist2[cost2 < 20]
-            new_robots_pos[2] = free_points2[np.argmin(dist2)]
+            free2 = free_points[cost2 < self.cost_th]
+            dist2 = dist2[cost2 < self.cost_th]
+            new_robots_pos[2] = free2[np.argmin(dist2)]
 
             print('----------------------- voronoi -------------------------')
             print('target:', target)
