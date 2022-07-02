@@ -188,8 +188,6 @@ class voronoi_partition:
                 [self.tb1.pose.pose.position.x, self.tb1.pose.pose.position.y],
                 [self.tb2.pose.pose.position.x, self.tb2.pose.pose.position.y]
             ])
-            if self.init_pose is None:
-                self.init_pose = np.copy(robots_pos)
 
             # free points
             free_points = self.og_to_world()
