@@ -18,6 +18,9 @@ class voronoi_partition:
         self.tb0 = None
         self.tb1 = None
         self.tb2 = None
+        self.gp0 = None
+        self.gp1 = None
+        self.gp2 = None
         self.og_np = None
         self.count = 0
         self.freq = 20
@@ -50,7 +53,16 @@ class voronoi_partition:
             OccupancyGrid , self.cm1_callback)
         rospy.Subscriber('tb3_2/move_base/global_costmap/costmap',
             OccupancyGrid , self.cm2_callback)
-        
+
+        rospy.Subscriber('/tb3_0/move_base/DWAPlannerROS/global_plan',
+            OccupancyGrid , self.gp0_callback)
+
+        rospy.Subscriber('/tb3_1/move_base/DWAPlannerROS/global_plan',
+            OccupancyGrid , self.gp1_callback)
+
+        rospy.Subscriber('/tb3_2/move_base/DWAPlannerROS/global_plan',
+            OccupancyGrid , self.gp2_callback)
+
         # target subscriber
         rospy.Subscriber('target_pose', PointStamped, self.target_callback)
 
@@ -63,6 +75,27 @@ class voronoi_partition:
           rospy.spin()
         except KeyboardInterrupt:
           print("Shutting down")
+
+    def gp0_callback(self, data):
+        """call back function for robot1 position"""
+        # rospy.loginfo("recieved data - tb0")
+        # print(data.pose.pose.position)
+        self.gp0 = data
+        # self.voronoi_compute()
+
+    def gp1_callback(self, data):
+        """call back function for robot1 position"""
+        # rospy.loginfo("recieved data - tb0")
+        # print(data.pose.pose.position)
+        self.gp1 = data
+        # self.voronoi_compute()
+
+    def gp2_callback(self, data):
+        """call back function for robot1 position"""
+        # rospy.loginfo("recieved data - tb0")
+        # print(data.pose.pose.position)
+        self.gp2 = data
+        # self.voronoi_compute()
 
 
     def og_callback(self, data):
@@ -264,32 +297,51 @@ class voronoi_partition:
             for i in range(3):
                 print('robot', i, robots_pos[i], '-->', new_robots_pos[i])
 
+            plan_target_loc = -1
             # for publishing to robot 0:
             self.way_pt0.pose.position.x = new_robots_pos[0,0]
             self.way_pt0.pose.position.y = new_robots_pos[0,1]
             self.way_pt0.pose.position.z = 0
-            self.way_pt0.pose.orientation.x = self.tb0.pose.pose.orientation.x
-            self.way_pt0.pose.orientation.y = self.tb0.pose.pose.orientation.y
-            self.way_pt0.pose.orientation.z = self.tb0.pose.pose.orientation.z
-            self.way_pt0.pose.orientation.w = self.tb0.pose.pose.orientation.w
+            if self.gp0 is not None:
+                self.way_pt0.pose.orientation.x = self.gp0.poses[plan_target_loc].pose.orientation.x
+                self.way_pt0.pose.orientation.y = self.gp0.poses[plan_target_loc].pose.orientation.y
+                self.way_pt0.pose.orientation.z = self.gp0.poses[plan_target_loc].pose.orientation.z
+                self.way_pt0.pose.orientation.w = self.gp0.poses[plan_target_loc].pose.orientation.w
+            else:
+                self.way_pt0.pose.orientation.x = self.tb0.pose.pose.orientation.x
+                self.way_pt0.pose.orientation.y = self.tb0.pose.pose.orientation.y
+                self.way_pt0.pose.orientation.z = self.tb0.pose.pose.orientation.z
+                self.way_pt0.pose.orientation.w = self.tb0.pose.pose.orientation.w
 
             # for publishing to robot 1:
             self.way_pt1.pose.position.x = new_robots_pos[1,0]
             self.way_pt1.pose.position.y = new_robots_pos[1,1]
             self.way_pt1.pose.position.z = 0
-            self.way_pt1.pose.orientation.x = self.tb1.pose.pose.orientation.x
-            self.way_pt1.pose.orientation.y = self.tb1.pose.pose.orientation.y
-            self.way_pt1.pose.orientation.z = self.tb1.pose.pose.orientation.z
-            self.way_pt1.pose.orientation.w = self.tb1.pose.pose.orientation.w
+            if self.gp1 is not None:
+                self.way_pt1.pose.orientation.x = self.gp1.poses[plan_target_loc].pose.orientation.x
+                self.way_pt1.pose.orientation.y = self.gp1.poses[plan_target_loc].pose.orientation.y
+                self.way_pt1.pose.orientation.z = self.gp1.poses[plan_target_loc].pose.orientation.z
+                self.way_pt1.pose.orientation.w = self.gp1.poses[plan_target_loc].pose.orientation.w
+            else:
+                self.way_pt1.pose.orientation.x = self.tb1.pose.pose.orientation.x
+                self.way_pt1.pose.orientation.y = self.tb1.pose.pose.orientation.y
+                self.way_pt1.pose.orientation.z = self.tb1.pose.pose.orientation.z
+                self.way_pt1.pose.orientation.w = self.tb1.pose.pose.orientation.w
 
             # for publishing to robot 2:
             self.way_pt2.pose.position.x = new_robots_pos[2,0]
             self.way_pt2.pose.position.y = new_robots_pos[2,1]
             self.way_pt2.pose.position.z = 0
-            self.way_pt2.pose.orientation.x = self.tb2.pose.pose.orientation.x
-            self.way_pt2.pose.orientation.y = self.tb2.pose.pose.orientation.y
-            self.way_pt2.pose.orientation.z = self.tb2.pose.pose.orientation.z
-            self.way_pt2.pose.orientation.w = self.tb2.pose.pose.orientation.w
+            if self.gp2 is not None:
+                self.way_pt2.pose.orientation.x = self.gp2.poses[plan_target_loc].pose.orientation.x
+                self.way_pt2.pose.orientation.y = self.gp2.poses[plan_target_loc].pose.orientation.y
+                self.way_pt2.pose.orientation.z = self.gp2.poses[plan_target_loc].pose.orientation.z
+                self.way_pt2.pose.orientation.w = self.gp2.poses[plan_target_loc].pose.orientation.w
+            else:
+                self.way_pt2.pose.orientation.x = self.tb2.pose.pose.orientation.x
+                self.way_pt2.pose.orientation.y = self.tb2.pose.pose.orientation.y
+                self.way_pt2.pose.orientation.z = self.tb2.pose.pose.orientation.z
+                self.way_pt2.pose.orientation.w = self.tb2.pose.pose.orientation.w
 
             self.publish_pts()
 
