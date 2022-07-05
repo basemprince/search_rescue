@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 from re import U
+from tkinter import N
 import rospy
 from geometry_msgs.msg import PoseStamped, PointStamped
-from nav_msgs.msg import OccupancyGrid, MapMetaData, Odometry
+from nav_msgs.msg import OccupancyGrid, MapMetaData, Odometry, Path
 from map_msgs.msg import OccupancyGridUpdate
 import numpy as np
 
@@ -15,23 +16,31 @@ from matplotlib.pyplot import cm
 class voronoi_partition:
 
     def __init__(self):
-        self.tb0 = None
-        self.tb1 = None
-        self.tb2 = None
-        self.gp0 = None
-        self.gp1 = None
-        self.gp2 = None
-        self.og_np = None
+        self.n_robots = 1
         self.count = 0
         self.freq = 20
         self.cost_th = 20
         self.dist_th = 0.8
-        self.cm0 = None
-        self.cm1 = None
-        self.cm2 = None
+        self.plan_target_loc = -1
+
         self.exp_target = None
         self.tb_goal = None
         self.target = None
+
+        self.og_np = None
+
+        self.tb0 = None
+        self.tb1 = None
+        self.tb2 = None
+
+        self.gp0 = None
+        self.gp1 = None
+        self.gp2 = None
+
+        self.cm0 = None
+        self.cm1 = None
+        self.cm2 = None
+        
         self.way_pt0 = PoseStamped()
         self.way_pt1 = PoseStamped()
         self.way_pt2 = PoseStamped()
@@ -47,23 +56,16 @@ class voronoi_partition:
         rospy.Subscriber('map', OccupancyGrid , self.og_callback)
 
         # cost map subscriber
-        rospy.Subscriber('tb3_0/move_base/global_costmap/costmap',
-            OccupancyGrid , self.cm0_callback)
-        rospy.Subscriber('tb3_1/move_base/global_costmap/costmap',
-            OccupancyGrid , self.cm1_callback)
-        rospy.Subscriber('tb3_2/move_base/global_costmap/costmap',
-            OccupancyGrid , self.cm2_callback)
+        rospy.Subscriber('tb3_0/move_base/global_costmap/costmap', OccupancyGrid, self.cm0_callback)
+        rospy.Subscriber('tb3_1/move_base/global_costmap/costmap', OccupancyGrid, self.cm1_callback)
+        rospy.Subscriber('tb3_2/move_base/global_costmap/costmap', OccupancyGrid, self.cm2_callback)
 
-        rospy.Subscriber('/tb3_0/move_base/DWAPlannerROS/global_plan',
-            OccupancyGrid , self.gp0_callback)
+        # global plan subscriber
+        rospy.Subscriber('/tb3_0/move_base/DWAPlannerROS/local_plan', Path, self.gp0_callback)
+        rospy.Subscriber('/tb3_1/move_base/DWAPlannerROS/local_plan', Path, self.gp1_callback)
+        rospy.Subscriber('/tb3_2/move_base/DWAPlannerROS/local_plan', Path, self.gp2_callback)
 
-        rospy.Subscriber('/tb3_1/move_base/DWAPlannerROS/global_plan',
-            OccupancyGrid , self.gp1_callback)
-
-        rospy.Subscriber('/tb3_2/move_base/DWAPlannerROS/global_plan',
-            OccupancyGrid , self.gp2_callback)
-
-        # target subscriber
+        # rescue target subscriber
         rospy.Subscriber('target_pose', PointStamped, self.target_callback)
 
         # robot target publisher
@@ -75,28 +77,22 @@ class voronoi_partition:
           rospy.spin()
         except KeyboardInterrupt:
           print("Shutting down")
+    
 
     def gp0_callback(self, data):
-        """call back function for robot1 position"""
-        # rospy.loginfo("recieved data - tb0")
-        # print(data.pose.pose.position)
+        """call back function for robot0 global plan"""
         self.gp0 = data
-        # self.voronoi_compute()
+    
 
     def gp1_callback(self, data):
-        """call back function for robot1 position"""
-        # rospy.loginfo("recieved data - tb0")
-        # print(data.pose.pose.position)
+        """call back function for robot1 global plan"""
         self.gp1 = data
-        # self.voronoi_compute()
+    
 
     def gp2_callback(self, data):
-        """call back function for robot1 position"""
-        # rospy.loginfo("recieved data - tb0")
-        # print(data.pose.pose.position)
+        """call back function for robot2 global plan"""
         self.gp2 = data
-        # self.voronoi_compute()
-
+    
 
     def og_callback(self, data):
         """call back function for occupancy grid"""
@@ -110,46 +106,40 @@ class voronoi_partition:
         
 
     def tb0_callback(self, data):
-        """call back function for robot1 position"""
+        """call back function for robot0 position"""
         # rospy.loginfo("recieved data - tb0")
         # print(data.pose.pose.position)
         self.tb0 = data
-        # self.voronoi_compute()
     
 
     def tb1_callback(self, data):
-        """call back function for robot2 position"""
+        """call back function for robot1 position"""
         # rospy.loginfo("recieved data - tb1")
         self.tb1 = data
-        # self.voronoi_compute()
         
 
     def tb2_callback(self, data):
         """call back function for robot2 position"""
         # rospy.loginfo("recieved data - tb2")
         self.tb2 = data
-        # self.voronoi_compute()
     
 
     def cm0_callback(self, data):
-        """call back function for robot1 cost map"""
+        """call back function for robot0 cost map"""
         # rospy.loginfo("recieved data - cm0")
         self.cm0 = np.asarray(data.data, dtype=np.int8).reshape(data.info.height, data.info.width)
-        # print('0-', self.cm0.shape)
     
 
     def cm1_callback(self, data):
         """call back function for robot1 cost map"""
         # rospy.loginfo("recieved data - cm1")
         self.cm1 = np.asarray(data.data, dtype=np.int8).reshape(data.info.height, data.info.width)
-        # print('1-', self.cm1.shape)
     
 
     def cm2_callback(self, data):
-        """call back function for robot1 cost map"""
+        """call back function for robot2 cost map"""
         # rospy.loginfo("recieved data - cm2")
         self.cm2 = np.asarray(data.data, dtype=np.int8).reshape(data.info.height, data.info.width)
-        # print('2-', self.cm2.shape)
     
 
     def target_callback(self, data):
@@ -178,6 +168,7 @@ class voronoi_partition:
         # data = np.ma.array(data, mask=data==-1, fill_value=-1)
         self.og_np = data
         # rospy.loginfo(self.og_np)
+    
     
     def check_goal(self, robot_pos, th=1):
         """check if one robot has reach the goal pose"""
@@ -245,6 +236,11 @@ class voronoi_partition:
                 [self.tb1.pose.pose.position.x, self.tb1.pose.pose.position.y],
                 [self.tb2.pose.pose.position.x, self.tb2.pose.pose.position.y]
             ])
+            robots_pos = robots_pos[:self.n_robots]
+
+            # cost map
+            cms = [self.cm0, self.cm1, self.cm2]
+            cms = cms[:self.n_robots]
 
             # free points
             free_points, free_points_grids = self.og_to_world()
@@ -257,91 +253,104 @@ class voronoi_partition:
                 target = self.exp_target
             else:
                 target = unknown_points[np.random.randint(0,len(unknown_points))]
-            new_robots_pos = self.voronoi(robots_pos, free_points, target, cov=1)
+            
+            if self.n_robots == 1:
+                new_robots_pos = np.expand_dims(np.copy(target), axis=0)
+            else:
+                new_robots_pos = self.voronoi(robots_pos, free_points, target, cov=1)
+
+            # adjust goal so that robots are not too close to each other
+            dist = []
+            for i in range(self.n_robots):
+                dist.append(np.array([np.inner(new_robots_pos[i]-point, new_robots_pos[i]-point) for point in free_points]))
+            # dist0 = np.array([np.inner(new_robots_pos[0]-point, new_robots_pos[0]-point) for point in free_points])
+            # dist1 = np.array([np.inner(new_robots_pos[1]-point, new_robots_pos[1]-point) for point in free_points])
+            # dist2 = np.array([np.inner(new_robots_pos[2]-point, new_robots_pos[2]-point) for point in free_points])
+
+            if self.n_robots > 1:
+                for i in range(self.n_robots - 1):
+                    if np.inner(new_robots_pos[i]-new_robots_pos[-1], new_robots_pos[i]-new_robots_pos[-1]) < self.dist_th**2:
+                        dist_ = dist[i][dist[-1] >= self.dist_th**2]
+                        free_ = free_points[dist[-1] >= self.dist_th**2]
+                        new_robots_pos[i] = free_[np.argmin(dist_)]
+                    # if np.inner(new_robots_pos[1]-new_robots_pos[2], new_robots_pos[1]-new_robots_pos[2]) < self.dist_th**2:
+                    #     dist1_ = dist1[dist2 >= self.dist_th**2]
+                    #     free1_ = free_points[dist2 >= self.dist_th**2]
+                    #     new_robots_pos[1] = free1_[np.argmin(dist1_)]
+
+            # adjust goal pos by costmap
+            for i in range(self.n_robots):
+                cost = np.array([cms[i][grid[1],grid[0]] for grid in free_points_grids])
+                free = free_points[cost < self.cost_th]
+                dist_ = dist[i][cost < self.cost_th]
+                new_robots_pos[i] = free[np.argmin(dist_)]
+
+            # cost1 = np.array([self.cm1[grid[1],grid[0]] for grid in free_points_grids])
+            # free1 = free_points[cost1 < self.cost_th]
+            # dist1 = dist1[cost1 < self.cost_th]
+            # new_robots_pos[1] = free1[np.argmin(dist1)]
+
+            # cost2 = np.array([self.cm2[grid[1],grid[0]] for grid in free_points_grids])
+            # free2 = free_points[cost2 < self.cost_th]
+            # dist2 = dist2[cost2 < self.cost_th]
+            # new_robots_pos[2] = free2[np.argmin(dist2)]
 
             self.exp_target = target
             self.tb_goal = np.copy(new_robots_pos)
 
-            # adjust goal so that robots are not too close to each other
-            dist0 = np.array([np.inner(new_robots_pos[0]-point, new_robots_pos[0]-point) for point in free_points])
-            dist1 = np.array([np.inner(new_robots_pos[1]-point, new_robots_pos[1]-point) for point in free_points])
-            dist2 = np.array([np.inner(new_robots_pos[2]-point, new_robots_pos[2]-point) for point in free_points])
-
-            if np.inner(new_robots_pos[0]-new_robots_pos[2], new_robots_pos[0]-new_robots_pos[2]) < self.dist_th**2:
-                dist0_ = dist0[dist2 >= self.dist_th**2]
-                free0_ = free_points[dist2 >= self.dist_th**2]
-                new_robots_pos[0] = free0_[np.argmin(dist0_)]
-            if np.inner(new_robots_pos[1]-new_robots_pos[2], new_robots_pos[1]-new_robots_pos[2]) < self.dist_th**2:
-                dist1_ = dist1[dist2 >= self.dist_th**2]
-                free1_ = free_points[dist2 >= self.dist_th**2]
-                new_robots_pos[1] = free1_[np.argmin(dist1_)]
-
-            # adjust goal pos by costmap
-            cost0 = np.array([self.cm0[grid[1],grid[0]] for grid in free_points_grids])
-            free0 = free_points[cost0 < self.cost_th]
-            dist0 = dist0[cost0 < self.cost_th]
-            new_robots_pos[0] = free0[np.argmin(dist0)]
-
-            cost1 = np.array([self.cm1[grid[1],grid[0]] for grid in free_points_grids])
-            free1 = free_points[cost1 < self.cost_th]
-            dist1 = dist1[cost1 < self.cost_th]
-            new_robots_pos[1] = free1[np.argmin(dist1)]
-
-            cost2 = np.array([self.cm2[grid[1],grid[0]] for grid in free_points_grids])
-            free2 = free_points[cost2 < self.cost_th]
-            dist2 = dist2[cost2 < self.cost_th]
-            new_robots_pos[2] = free2[np.argmin(dist2)]
-
             print('----------------------- voronoi -------------------------')
             print('target:', target)
-            for i in range(3):
+            for i in range(self.n_robots):
                 print('robot', i, robots_pos[i], '-->', new_robots_pos[i])
 
-            plan_target_loc = -1
-            # for publishing to robot 0:
-            self.way_pt0.pose.position.x = new_robots_pos[0,0]
-            self.way_pt0.pose.position.y = new_robots_pos[0,1]
-            self.way_pt0.pose.position.z = 0
-            if self.gp0 is not None:
-                self.way_pt0.pose.orientation.x = self.gp0.poses[plan_target_loc].pose.orientation.x
-                self.way_pt0.pose.orientation.y = self.gp0.poses[plan_target_loc].pose.orientation.y
-                self.way_pt0.pose.orientation.z = self.gp0.poses[plan_target_loc].pose.orientation.z
-                self.way_pt0.pose.orientation.w = self.gp0.poses[plan_target_loc].pose.orientation.w
-            else:
-                self.way_pt0.pose.orientation.x = self.tb0.pose.pose.orientation.x
-                self.way_pt0.pose.orientation.y = self.tb0.pose.pose.orientation.y
-                self.way_pt0.pose.orientation.z = self.tb0.pose.pose.orientation.z
-                self.way_pt0.pose.orientation.w = self.tb0.pose.pose.orientation.w
 
-            # for publishing to robot 1:
-            self.way_pt1.pose.position.x = new_robots_pos[1,0]
-            self.way_pt1.pose.position.y = new_robots_pos[1,1]
-            self.way_pt1.pose.position.z = 0
-            if self.gp1 is not None:
-                self.way_pt1.pose.orientation.x = self.gp1.poses[plan_target_loc].pose.orientation.x
-                self.way_pt1.pose.orientation.y = self.gp1.poses[plan_target_loc].pose.orientation.y
-                self.way_pt1.pose.orientation.z = self.gp1.poses[plan_target_loc].pose.orientation.z
-                self.way_pt1.pose.orientation.w = self.gp1.poses[plan_target_loc].pose.orientation.w
-            else:
-                self.way_pt1.pose.orientation.x = self.tb1.pose.pose.orientation.x
-                self.way_pt1.pose.orientation.y = self.tb1.pose.pose.orientation.y
-                self.way_pt1.pose.orientation.z = self.tb1.pose.pose.orientation.z
-                self.way_pt1.pose.orientation.w = self.tb1.pose.pose.orientation.w
+            if self.n_robots > 0:
+                # for publishing to robot 0:
+                self.way_pt0.pose.position.x = new_robots_pos[0,0]
+                self.way_pt0.pose.position.y = new_robots_pos[0,1]
+                self.way_pt0.pose.position.z = 0
+                if self.gp0 is not None:
+                    self.way_pt0.pose.orientation.x = self.gp0.poses[self.plan_target_loc].pose.orientation.x
+                    self.way_pt0.pose.orientation.y = self.gp0.poses[self.plan_target_loc].pose.orientation.y
+                    self.way_pt0.pose.orientation.z = self.gp0.poses[self.plan_target_loc].pose.orientation.z
+                    self.way_pt0.pose.orientation.w = self.gp0.poses[self.plan_target_loc].pose.orientation.w
+                else:
+                    self.way_pt0.pose.orientation.x = self.tb0.pose.pose.orientation.x
+                    self.way_pt0.pose.orientation.y = self.tb0.pose.pose.orientation.y
+                    self.way_pt0.pose.orientation.z = self.tb0.pose.pose.orientation.z
+                    self.way_pt0.pose.orientation.w = self.tb0.pose.pose.orientation.w
 
-            # for publishing to robot 2:
-            self.way_pt2.pose.position.x = new_robots_pos[2,0]
-            self.way_pt2.pose.position.y = new_robots_pos[2,1]
-            self.way_pt2.pose.position.z = 0
-            if self.gp2 is not None:
-                self.way_pt2.pose.orientation.x = self.gp2.poses[plan_target_loc].pose.orientation.x
-                self.way_pt2.pose.orientation.y = self.gp2.poses[plan_target_loc].pose.orientation.y
-                self.way_pt2.pose.orientation.z = self.gp2.poses[plan_target_loc].pose.orientation.z
-                self.way_pt2.pose.orientation.w = self.gp2.poses[plan_target_loc].pose.orientation.w
-            else:
-                self.way_pt2.pose.orientation.x = self.tb2.pose.pose.orientation.x
-                self.way_pt2.pose.orientation.y = self.tb2.pose.pose.orientation.y
-                self.way_pt2.pose.orientation.z = self.tb2.pose.pose.orientation.z
-                self.way_pt2.pose.orientation.w = self.tb2.pose.pose.orientation.w
+            if self.n_robots > 1:
+                # for publishing to robot 1:
+                self.way_pt1.pose.position.x = new_robots_pos[1,0]
+                self.way_pt1.pose.position.y = new_robots_pos[1,1]
+                self.way_pt1.pose.position.z = 0
+                if self.gp1 is not None:
+                    self.way_pt1.pose.orientation.x = self.gp1.poses[self.plan_target_loc].pose.orientation.x
+                    self.way_pt1.pose.orientation.y = self.gp1.poses[self.plan_target_loc].pose.orientation.y
+                    self.way_pt1.pose.orientation.z = self.gp1.poses[self.plan_target_loc].pose.orientation.z
+                    self.way_pt1.pose.orientation.w = self.gp1.poses[self.plan_target_loc].pose.orientation.w
+                else:
+                    self.way_pt1.pose.orientation.x = self.tb1.pose.pose.orientation.x
+                    self.way_pt1.pose.orientation.y = self.tb1.pose.pose.orientation.y
+                    self.way_pt1.pose.orientation.z = self.tb1.pose.pose.orientation.z
+                    self.way_pt1.pose.orientation.w = self.tb1.pose.pose.orientation.w
+
+            if self.n_robots > 2:
+                # for publishing to robot 2:
+                self.way_pt2.pose.position.x = new_robots_pos[2,0]
+                self.way_pt2.pose.position.y = new_robots_pos[2,1]
+                self.way_pt2.pose.position.z = 0
+                if self.gp2 is not None:
+                    self.way_pt2.pose.orientation.x = self.gp2.poses[self.plan_target_loc].pose.orientation.x
+                    self.way_pt2.pose.orientation.y = self.gp2.poses[self.plan_target_loc].pose.orientation.y
+                    self.way_pt2.pose.orientation.z = self.gp2.poses[self.plan_target_loc].pose.orientation.z
+                    self.way_pt2.pose.orientation.w = self.gp2.poses[self.plan_target_loc].pose.orientation.w
+                else:
+                    self.way_pt2.pose.orientation.x = self.tb2.pose.pose.orientation.x
+                    self.way_pt2.pose.orientation.y = self.tb2.pose.pose.orientation.y
+                    self.way_pt2.pose.orientation.z = self.tb2.pose.pose.orientation.z
+                    self.way_pt2.pose.orientation.w = self.tb2.pose.pose.orientation.w
 
             self.publish_pts()
 
@@ -359,13 +368,16 @@ class voronoi_partition:
         self.way_pt2.header.stamp = rospy.Time.now()
         self.way_pt2.header.frame_id = "map"
 
-
-        self.pub0.publish(self.way_pt0)
-        rospy.sleep(0.5)
-        self.pub1.publish(self.way_pt1)
-        rospy.sleep(0.5)
-        self.pub2.publish(self.way_pt2)
-        rospy.sleep(0.5)
+        
+        if self.n_robots > 0:
+            self.pub0.publish(self.way_pt0)
+            rospy.sleep(0.5)
+        if self.n_robots > 1:
+            self.pub1.publish(self.way_pt1)
+            rospy.sleep(0.5)
+        if self.n_robots > 2:
+            self.pub2.publish(self.way_pt2)
+            rospy.sleep(0.5)
 
 if __name__ == '__main__':
   voronoi_partition()
