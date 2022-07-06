@@ -16,12 +16,14 @@ from matplotlib.pyplot import cm
 class voronoi_partition:
 
     def __init__(self):
-        self.n_robots = 1
+        self.n_robots = 3
         self.count = 0
         self.freq = 20
         self.cost_th = 20
         self.dist_th = 0.8
         self.plan_target_loc = -1
+        self.row_range = [45, 350]
+        self.col_range = [25, 371]
 
         self.exp_target = None
         self.tb_goal = None
@@ -155,10 +157,18 @@ class voronoi_partition:
         output: the x and y location on real map
         """
         rows, columns = np.where(self.og_np==value)
-        xs = round(self.map.info.origin.position.x,2) + round(self.map.info.resolution,2) * columns
-        ys = round(self.map.info.origin.position.y,2) + round(self.map.info.resolution,2) * rows
+        rows1 = rows[rows > self.row_range[0]]
+        columns1 = columns[rows > self.row_range[0]]
+        rows2 = rows1[rows1 < self.row_range[1]]
+        columns2 = columns1[rows1 < self.row_range[1]]
+        rows3 = rows2[columns2 > self.col_range[0]]
+        columns3 = columns2[columns2 > self.col_range[0]]
+        rows4 = rows3[columns3 < self.col_range[1]]
+        columns4 = columns3[columns3 < self.col_range[1]]
+        xs = round(self.map.info.origin.position.x,2) + round(self.map.info.resolution,2) * columns4
+        ys = round(self.map.info.origin.position.y,2) + round(self.map.info.resolution,2) * rows4
         
-        return np.column_stack((xs, ys)), np.column_stack((columns, rows))
+        return np.column_stack((xs, ys)), np.column_stack((columns4, rows4))
 
 
     def og_to_numpy(self):
@@ -219,6 +229,12 @@ class voronoi_partition:
                     points_i = points[vor_indices==i]
                     weights_i = weights[vor_indices==i].reshape(-1,1)
                     centroids[i] = np.sum(weights_i * points_i, axis=0) / np.sum(weights_i)
+
+            # if self.count % (self.freq*10) == 0:
+            #     np.save('src/search_rescue/src/npy/points_' + str(self.count) + '.npy', points)
+            #     np.save('src/search_rescue/src/npy/vor_indices_' + str(self.count) + '.npy', vor_indices)
+            #     np.save('src/search_rescue/src/npy/generators_' + str(self.count) + '.npy', generators)
+            #     np.save('src/search_rescue/src/npy/centroids_' + str(self.count) + '.npy', centroids)
             
             # update
             generators = np.copy(centroids)
@@ -263,9 +279,6 @@ class voronoi_partition:
             dist = []
             for i in range(self.n_robots):
                 dist.append(np.array([np.inner(new_robots_pos[i]-point, new_robots_pos[i]-point) for point in free_points]))
-            # dist0 = np.array([np.inner(new_robots_pos[0]-point, new_robots_pos[0]-point) for point in free_points])
-            # dist1 = np.array([np.inner(new_robots_pos[1]-point, new_robots_pos[1]-point) for point in free_points])
-            # dist2 = np.array([np.inner(new_robots_pos[2]-point, new_robots_pos[2]-point) for point in free_points])
 
             if self.n_robots > 1:
                 for i in range(self.n_robots - 1):
@@ -273,10 +286,6 @@ class voronoi_partition:
                         dist_ = dist[i][dist[-1] >= self.dist_th**2]
                         free_ = free_points[dist[-1] >= self.dist_th**2]
                         new_robots_pos[i] = free_[np.argmin(dist_)]
-                    # if np.inner(new_robots_pos[1]-new_robots_pos[2], new_robots_pos[1]-new_robots_pos[2]) < self.dist_th**2:
-                    #     dist1_ = dist1[dist2 >= self.dist_th**2]
-                    #     free1_ = free_points[dist2 >= self.dist_th**2]
-                    #     new_robots_pos[1] = free1_[np.argmin(dist1_)]
 
             # adjust goal pos by costmap
             for i in range(self.n_robots):
@@ -284,16 +293,6 @@ class voronoi_partition:
                 free = free_points[cost < self.cost_th]
                 dist_ = dist[i][cost < self.cost_th]
                 new_robots_pos[i] = free[np.argmin(dist_)]
-
-            # cost1 = np.array([self.cm1[grid[1],grid[0]] for grid in free_points_grids])
-            # free1 = free_points[cost1 < self.cost_th]
-            # dist1 = dist1[cost1 < self.cost_th]
-            # new_robots_pos[1] = free1[np.argmin(dist1)]
-
-            # cost2 = np.array([self.cm2[grid[1],grid[0]] for grid in free_points_grids])
-            # free2 = free_points[cost2 < self.cost_th]
-            # dist2 = dist2[cost2 < self.cost_th]
-            # new_robots_pos[2] = free2[np.argmin(dist2)]
 
             self.exp_target = target
             self.tb_goal = np.copy(new_robots_pos)
