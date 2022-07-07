@@ -24,6 +24,8 @@ class voronoi_partition:
         self.plan_target_loc = -1
         self.row_range = [45, 350]
         self.col_range = [25, 371]
+        self.iter_cnt = 0
+        self.iter_limit = 3
 
         self.exp_target = None
         self.tb_goal = None
@@ -183,8 +185,11 @@ class voronoi_partition:
     def check_goal(self, robot_pos, th=1):
         """check if one robot has reach the goal pose"""
         for pos, goal_pos in zip(robot_pos, self.tb_goal):
-            if np.inner(pos-goal_pos, pos-goal_pos) < th:
+            if self.iter_cnt == self.iter_limit or np.inner(pos-goal_pos, pos-goal_pos) < th:
+                self.iter_cnt = 0
                 return True
+            
+            self.iter_cnt += 1
         
         return False
     
@@ -216,21 +221,13 @@ class voronoi_partition:
             vor_indices = np.array(vor_indices)
 
             centroids = np.empty(generators.shape)
-            if self.target is None:
-                weights = self.density_function(points, target, cov)
-                for i in range(n_generator):
-                    points_i = points[vor_indices==i]
-                    weights_i = weights[vor_indices==i].reshape(-1,1)
-                    centroids[i] = np.sum(weights_i * points_i, axis=0) / np.sum(weights_i)
-            else:
-                target = np.array([self.target.point.x, self.target.point.y])
-                weights = self.density_function(points, target, cov/10)
-                for i in range(n_generator):
-                    points_i = points[vor_indices==i]
-                    weights_i = weights[vor_indices==i].reshape(-1,1)
-                    centroids[i] = np.sum(weights_i * points_i, axis=0) / np.sum(weights_i)
+            weights = self.density_function(points, target, cov)
+            for i in range(n_generator):
+                points_i = points[vor_indices==i]
+                weights_i = weights[vor_indices==i].reshape(-1,1)
+                centroids[i] = np.sum(weights_i * points_i, axis=0) / np.sum(weights_i)
 
-            # if self.count % (self.freq*10) == 0:
+            # if self.count % (100) == 0:
             #     np.save('src/search_rescue/src/npy/points_' + str(self.count) + '.npy', points)
             #     np.save('src/search_rescue/src/npy/vor_indices_' + str(self.count) + '.npy', vor_indices)
             #     np.save('src/search_rescue/src/npy/generators_' + str(self.count) + '.npy', generators)
@@ -264,22 +261,27 @@ class voronoi_partition:
             # unknown points
             unknown_points, unkown_points_grids = self.og_to_world(-1)
 
-            current_points = unknown_points
-            current_points_grids = unkown_points_grids
-
             # voronoi compute
-            if self.tb_goal is not None and not self.check_goal(robots_pos):
-                target = self.exp_target
-            else:
-                target = unknown_points[np.random.randint(0,len(unknown_points))]
-            
             if self.target is None:
+                current_points = unknown_points
+                current_points_grids = unkown_points_grids
+
+                if self.tb_goal is not None and not self.check_goal(robots_pos):
+                    target = self.exp_target
+                else:
+                    # target = unknown_points[np.random.randint(0,len(unknown_points))]
+                    id = np.random.randint(0, self.n_robots)
+                    target = unknown_points[np.argmin([np.inner(robots_pos[id]-point, robots_pos[id]-point) for point in unknown_points])]
+                
                 if self.n_robots == 1:
                     new_robots_pos = np.expand_dims(np.copy(target), axis=0)
                 else:
                     new_robots_pos = self.voronoi(robots_pos, current_points, target, cov=1)
             else:
-                new_robots_pos = self.voronoi(robots_pos, free_points, target, cov=1)
+                target = np.array([self.target.point.x, self.target.point.y])
+                current_points = free_points
+                current_points_grids = free_points_grids
+                new_robots_pos = self.voronoi(robots_pos, current_points, target, cov=0.1)
 
             # adjust goal so that robots are not too close to each other
             dist = []
@@ -294,11 +296,11 @@ class voronoi_partition:
                         new_robots_pos[i] = free_[np.argmin(dist_)]
 
             # adjust goal pos by costmap
-            # for i in range(self.n_robots):
-            #     cost = np.array([cms[i][grid[1],grid[0]] for grid in current_points_grids])
-            #     free = current_points[cost < self.cost_th]
-            #     dist_ = dist[i][cost < self.cost_th]
-            #     new_robots_pos[i] = free[np.argmin(dist_)]
+            for i in range(self.n_robots):
+                cost = np.array([cms[i][grid[1],grid[0]] for grid in current_points_grids])
+                free = current_points[cost < self.cost_th]
+                dist_ = dist[i][cost < self.cost_th]
+                new_robots_pos[i] = free[np.argmin(dist_)]
 
             self.exp_target = target
             self.tb_goal = np.copy(new_robots_pos)

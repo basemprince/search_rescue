@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
 import numpy as np
 
-ids = [200, 1000, 1800, 2400]
+ids = [0, 200, 400, 600]
 
 color = cm.rainbow(np.linspace(0, 1, 3))
 cl = ['m', 'g', 'r']
