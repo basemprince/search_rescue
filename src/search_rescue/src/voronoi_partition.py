@@ -264,20 +264,22 @@ class voronoi_partition:
             # unknown points
             unknown_points, unkown_points_grids = self.og_to_world(-1)
 
+            current_points = unknown_points
+            current_points_grids = unkown_points_grids
+
             # voronoi compute
             if self.tb_goal is not None and not self.check_goal(robots_pos):
                 target = self.exp_target
             else:
                 target = unknown_points[np.random.randint(0,len(unknown_points))]
-                current_points = unknown_points
-                current_points_grids = unkown_points_grids
             
-            if self.n_robots == 1:
-                new_robots_pos = np.expand_dims(np.copy(target), axis=0)
+            if self.target is None:
+                if self.n_robots == 1:
+                    new_robots_pos = np.expand_dims(np.copy(target), axis=0)
+                else:
+                    new_robots_pos = self.voronoi(robots_pos, current_points, target, cov=1)
             else:
-                current_points = unknown_points
-                current_points_grids = unkown_points_grids
-                new_robots_pos = self.voronoi(robots_pos, current_points, target, cov=1)
+                new_robots_pos = self.voronoi(robots_pos, free_points, target, cov=1)
 
             # adjust goal so that robots are not too close to each other
             dist = []
@@ -292,11 +294,11 @@ class voronoi_partition:
                         new_robots_pos[i] = free_[np.argmin(dist_)]
 
             # adjust goal pos by costmap
-            for i in range(self.n_robots):
-                cost = np.array([cms[i][grid[1],grid[0]] for grid in current_points_grids])
-                free = current_points[cost < self.cost_th]
-                dist_ = dist[i][cost < self.cost_th]
-                new_robots_pos[i] = free[np.argmin(dist_)]
+            # for i in range(self.n_robots):
+            #     cost = np.array([cms[i][grid[1],grid[0]] for grid in current_points_grids])
+            #     free = current_points[cost < self.cost_th]
+            #     dist_ = dist[i][cost < self.cost_th]
+            #     new_robots_pos[i] = free[np.argmin(dist_)]
 
             self.exp_target = target
             self.tb_goal = np.copy(new_robots_pos)
