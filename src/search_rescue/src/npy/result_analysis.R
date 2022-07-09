@@ -86,8 +86,12 @@ ggplot(data_base, aes(x=1:nrow(data_base))) +
   geom_line(aes(y = r24), color="steelblue", linetype="twodash") 
 
 colors <- c("three robots" = gg_col(1), "two robots" = gg_col(2))
+setEPS()
+postscript("cost_series.eps")
 ggplot(data_base, aes(x=1:nrow(data_base))) + 
   geom_line(aes(y = r3_means, color = "three robots")) + 
   geom_line(aes(y = r2_means, color="two robots")) +
-  labs(x = "Iteration number", y = "Average cost",color = "Legend")
+  labs(x = "Iteration #", y = "Average Cost",color = "Legend") +
+  theme(legend.position=c(0.85,0.9),aspect.ratio=1,text = element_text(size =14))
 
+dev.off()
