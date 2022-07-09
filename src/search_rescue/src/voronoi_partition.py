@@ -26,6 +26,7 @@ class voronoi_partition:
         self.col_range = [25, 371]
         self.iter_cnt = 0
         self.iter_limit = 3
+        self.J = []
 
         self.exp_target = None
         self.tb_goal = None
@@ -208,6 +209,13 @@ class voronoi_partition:
             return multivariate_normal.pdf(points, mean=target, cov=cov)
         else:
             return np.ones(points.shape[0])
+        
+    
+    def cost_function(self, points, centroids, vor_indices):
+        cost = sum([np.inner(point-centroids[vor_indices[i]], point-centroids[vor_indices[i]]) \
+            for i, point in enumerate(points)])
+
+        return cost
     
 
     def voronoi(self, generators, points, target, cov=1, n_iter=1):
@@ -226,12 +234,13 @@ class voronoi_partition:
                 points_i = points[vor_indices==i]
                 weights_i = weights[vor_indices==i].reshape(-1,1)
                 centroids[i] = np.sum(weights_i * points_i, axis=0) / np.sum(weights_i)
+            
+            self.J.append(self.cost_function(points, centroids, vor_indices))
 
-            # if self.count % (100) == 0:
-            #     np.save('src/search_rescue/src/npy/points_' + str(self.count) + '.npy', points)
-            #     np.save('src/search_rescue/src/npy/vor_indices_' + str(self.count) + '.npy', vor_indices)
-            #     np.save('src/search_rescue/src/npy/generators_' + str(self.count) + '.npy', generators)
-            #     np.save('src/search_rescue/src/npy/centroids_' + str(self.count) + '.npy', centroids)
+            # np.save('src/search_rescue/src/npy/points_' + str(self.count) + '.npy', points)
+            # np.save('src/search_rescue/src/npy/vor_indices_' + str(self.count) + '.npy', vor_indices)
+            # np.save('src/search_rescue/src/npy/generators_' + str(self.count) + '.npy', generators)
+            # np.save('src/search_rescue/src/npy/centroids_' + str(self.count) + '.npy', centroids)
             
             # update
             generators = np.copy(centroids)
@@ -277,6 +286,9 @@ class voronoi_partition:
                     new_robots_pos = np.expand_dims(np.copy(target), axis=0)
                 else:
                     new_robots_pos = self.voronoi(robots_pos, current_points, target, cov=1)
+                
+                # save cost
+                np.save('src/search_rescue/src/npy/J.npy', np.array(self.J))
             else:
                 target = np.array([self.target.point.x, self.target.point.y])
                 current_points = free_points
