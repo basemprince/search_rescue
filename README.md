@@ -24,11 +24,13 @@ The objective: Search an unknown environment for a specific target using coopera
 
 The pipeline of the process:
 
-[<img src="images/illustration.png" width="550"/>](images/pipeline.png)
+[<img src="images/pipeline.png" width="600"/>](images/pipeline.png)
 
 
 Dynamic voronoi partitions for the unknown space:
-[<img src="images/illustration.png" width="550"/>](images/dynamic_voronoi.png)
+
+
+[<img src="images/dynamic_voronoi.png" width="550"/>](images/dynamic_voronoi.png)
 
 ## Installation
 
