@@ -4,6 +4,8 @@
 
 The objective: Search an unknown environment for a specific target using cooperative robots. The robots have no previous knowledge of the environment and need to collaboratively explore the environment to find and rescue the target. We proposed a dynamic Voronoi partition-based exploration algorithm to ensure exploration. We further used two exploration strategies of picking the exploration target. The results show that our algorithm achieves better performance when more robots are deployed. The improved exploration strategy further increased the performance by a significant margin.
 
+Link to simulation: https://www.youtube.com/watch?v=2KugQG_Rvb8
+
 
 [<img src="images/illustration.png" width="450"/>](images/illustration.png)
 
