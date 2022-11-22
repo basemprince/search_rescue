@@ -17,9 +17,9 @@ Link to simulation: https://www.youtube.com/watch?v=2KugQG_Rvb8
 * Employed cooperative exploration approach using dynamic Voronoi partitions
 * Robots explore map cooperatively until target is found
 * Robots favor exploration until target is found
-* The density function changes once the target is found to attarct them to go resuce it
+* The density function changes once the target is found to attract them to go rescue it
 * The explored map is shared between the robots to minimize duplication
-* Used move base package for cost maps and local/gloabal planning
+* Used move base package for cost maps and local/global planning
 * Global planning uses A* and the local collision avoidance uses DWA 
 
 
